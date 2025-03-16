@@ -7,6 +7,7 @@
 #include <psd/core/type/error.h>
 #include <psd/core/length_calculator.h>
 
+#include <iomanip>
 #include <memory>
 
 namespace PSD {
@@ -114,6 +115,17 @@ private:
 
   void ReadSignature() {
     auto signature = stream_.Read<SignatureTp>();
+
+    /*for (auto value : stream_.Read<std::uint8_t>(10)) {*/
+    /*  std::cout << std::hex */
+    /*            << std::setw(2)*/
+    /*            << std::setfill('0')*/
+    /*            << std::uppercase */
+    /*            << unsigned(value) << ", ";*/
+    /*}*/
+    /*std::cout << std::endl;*/
+    /*stream_.SetPos(stream_.GetPos() - 10);*/
+
     if (signature != SignatureTp { 0x38, 0x42, 0x49, 0x4D } &&
         signature != SignatureTp { 0x38, 0x42, 0x36, 0x34 }) {
       throw ExtraInfoElementIOError::InvalidSignature();
@@ -153,10 +165,15 @@ public:
   explicit LengthCalculator(ExtraInfoElement::Tp input) : input_(input) {}
 
   std::uint64_t Calculate() const {
+
+    std::uint64_t actual_length = input_->GetContentLength();
+    for (; actual_length % 4; 
+           actual_length++);
+
     return PSD::LengthCalculator(Header(
       input_->GetID(),
       input_->GetContentLength()
-    )).Calculate() + input_->GetContentLength();
+    )).Calculate() + actual_length;
   }
 
 private:
@@ -173,6 +190,12 @@ public:
 
   ExtraInfoElement::Tp Read(const Header &header, ExtraInfoElement::Tp ptr) {
     ptr->ReadContent(stream_, header);
+    
+    for (auto length = header.content_length; 
+              length % 4;
+              length++) {
+      stream_.IncPos();
+    }
     return ptr;
   }
 
@@ -191,6 +214,11 @@ public:
   void Write() {
     stream_.Write(Header(input_->GetID(), input_->GetContentLength()));
     input_->WriteContent(stream_);
+    for (auto length = input_->GetContentLength();
+              length % 4;
+              length++) {
+      stream_.Write<std::uint8_t>(0);
+    }
   }
 
 private:
@@ -226,12 +254,13 @@ public:
     return content_.size();
   }
   void ReadContent(Stream &stream, const Header &header) override {
-    id_ = header.id;
-    content_ = stream.Read<std::uint8_t>(
-      header.content_length % 2 
-        ? header.content_length + 1 
-        : header.content_length + 0
-    );
+    id_      = header.id;
+    content_ = stream.Read<std::uint8_t>(header.content_length);
+    /*content_ = stream.Read<std::uint8_t>(*/
+    /*  header.content_length % 2 */
+    /*    ? header.content_length + 1 */
+    /*    : header.content_length + 0*/
+    /*);*/
   }
   void WriteContent(Stream &stream) const override {
     stream.Write(content_);
