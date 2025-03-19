@@ -68,6 +68,13 @@ public:
     data_[ptr->GetID()] = ptr;
   }
 
+  void Clear() {
+    #ifdef PSD_DEBUG
+    insertion_order_.clear();
+    #endif
+    data_.clear();
+  }
+
   friend Iterator begin(ExtraInfo &input);
   friend ConstIterator begin(const ExtraInfo &input);
   friend Iterator end(ExtraInfo &input);
