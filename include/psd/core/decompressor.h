@@ -41,6 +41,7 @@ private:
 }; // Decompressor<std::vector<std::uint8_t>>
 
 #define PSD_REGISTER_DECOMPRESSOR_FOR_TYPE(TypeName, ClassName)             \
+  template <>                                                               \
   class Decompressor<TypeName> : public ClassName::Decompressor {           \
   public:                                                                   \
     Decompressor(const TypeName &input) : ClassName::Decompressor(input) {} \
