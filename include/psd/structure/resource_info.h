@@ -94,6 +94,13 @@ public:
   /*  data_[ResourceElementTe::ID] = std::make_shared<ResourceElementTe>(std::move(element));*/
   /*} */
 
+  void Clear() {
+    #ifdef PSD_DEBUG
+    insertion_order_.clear();
+    #endif
+    data_.clear();
+  }
+
 private:
   #ifdef PSD_DEBUG
   std::vector<ResourceElementID::Tp> insertion_order_;
