@@ -126,7 +126,6 @@ private:
 
 }; // StructureTemplate<MainInfoT, FinalImageT>::Writer
 
-PSD_REGISTER_READER_FOR_BUFFER(Structure);
 PSD_REGISTER_WRITER_FOR_BUFFER(CompressedStructure);
 
 template <typename MainInfoT, typename FinalImageT>
