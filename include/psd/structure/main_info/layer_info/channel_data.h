@@ -223,24 +223,6 @@ public:
   bool operator!=(const CompressedChannelData &other) const {
     return !operator==(other);
   }
-
-  ChannelInfo CreateChannelInfo() const {
-    ChannelInfo output;
-
-    for (auto index = 0u;
-              index < Color::ChannelCount<ColorV>;
-              index++) {
-      output[index] = PSD::LengthCalculator(data_[index]).Calculate();
-    }
-    if (!transparency_.IsEmpty()) {
-      output[TransparencyID] = PSD::LengthCalculator(transparency_).Calculate();
-    }
-    if (!mask_.IsEmpty()) {
-      output[MaskID] = PSD::LengthCalculator(mask_).Calculate();
-    }
-    return output;
-  }
-
 private:
   CompressedChannel data_[Color::ChannelCount<ColorV>];
 
@@ -277,7 +259,7 @@ template <Depth::Tp DepthV, Color::Tp ColorV>
 class ChannelInfoCreator<CompressedChannelData<DepthV, ColorV>> {
 public:
 
-  explicit ChannelInfoCreator(const CompressedChannelData<DepthV, ColorV> &input) : input_() {}
+  explicit ChannelInfoCreator(const CompressedChannelData<DepthV, ColorV> &input) : input_(input) {}
 
   ChannelInfo Create() const {
     ChannelInfo output;
