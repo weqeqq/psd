@@ -108,7 +108,10 @@ public:
   explicit LengthCalculator(const UnicodeString &input) : input_(input) {}
 
   std::uint64_t Calculate() const {
-    return 4 + (UnicodeConvertor(input_.string_).Convert<char16_t>().size() * sizeof(char16_t));
+    std::uint64_t length = 4 + (UnicodeConvertor(input_.string_).Convert<char16_t>().size()) * sizeof(char16_t);
+    return input_.string_.size() % 2 
+      ? length + sizeof(char16_t) 
+      : length;
   }
 
 private:
@@ -147,6 +150,9 @@ public:
         string.push_back(character);
       }
     }
+    if (length % 2) {
+      stream_.AdjustPos(sizeof(char16_t));
+    }
     return UnicodeString(string);
   }
 private:
@@ -164,6 +170,9 @@ public:
     stream_.Write<std::uint32_t>(input_.string_.size());
     for (const auto &character : UnicodeConvertor(input_.string_).Convert<char16_t>()) {
       stream_.Write(character);
+    }
+    if (input_.string_.size() % 2) {
+      stream_.Write(char16_t(0));
     }
   }
 private:
