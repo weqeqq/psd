@@ -116,16 +116,6 @@ private:
   void ReadSignature() {
     auto signature = stream_.Read<SignatureTp>();
 
-    /*for (auto value : stream_.Read<std::uint8_t>(10)) {*/
-    /*  std::cout << std::hex */
-    /*            << std::setw(2)*/
-    /*            << std::setfill('0')*/
-    /*            << std::uppercase */
-    /*            << unsigned(value) << ", ";*/
-    /*}*/
-    /*std::cout << std::endl;*/
-    /*stream_.SetPos(stream_.GetPos() - 10);*/
-
     if (signature != SignatureTp { 0x38, 0x42, 0x49, 0x4D } &&
         signature != SignatureTp { 0x38, 0x42, 0x36, 0x34 }) {
       throw ExtraInfoElementIOError::InvalidSignature();
@@ -167,7 +157,7 @@ public:
   std::uint64_t Calculate() const {
 
     std::uint64_t actual_length = input_->GetContentLength();
-    for (; actual_length % 4; 
+    for (; actual_length % 2; 
            actual_length++);
 
     return PSD::LengthCalculator(Header(
@@ -192,7 +182,7 @@ public:
     ptr->ReadContent(stream_, header);
     
     for (auto length = header.content_length; 
-              length % 4;
+              length % 2;
               length++) {
       stream_.IncPos();
     }
@@ -215,7 +205,7 @@ public:
     stream_.Write(Header(input_->GetID(), input_->GetContentLength()));
     input_->WriteContent(stream_);
     for (auto length = input_->GetContentLength();
-              length % 4;
+              length % 2;
               length++) {
       stream_.Write<std::uint8_t>(0);
     }
@@ -280,5 +270,14 @@ private:
 }; // DefaultExtraInfoElement
 
 #endif
+
+#define PSD_EXTRA_INFO_ELEMENT_IMPLEMENT_CLONE(ClassName)          \
+  bool Compare(const ExtraInfoElement::Tp &other) const override { \
+    return *std::static_pointer_cast<ClassName>(other) == *this;   \
+  }
+#define PSD_EXTRA_INFO_ELEMENT_IMPLEMENT_COMPARE(ClassName) \
+  ExtraInfoElement::Tp Clone() const override {             \
+    return std::make_shared<ClassName>(*this);              \
+  }
 
 }; // PSD

@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <psd/structure/main_info/extra_info_element.h>
+#include <psd/structure/main_info/extra_info/unicode_name.h>
 
 #include <iomanip>
 
@@ -61,11 +62,25 @@ public:
     return data_.at(id);
   }
 
-  void Set(ExtraInfoElement::Tp ptr) {
-    #ifdef PSD_DEBUG
-    insertion_order_.push_back(ptr->GetID());
-    #endif
-    data_[ptr->GetID()] = ptr;
+  template <typename ExtraInfoElementT>
+  ExtraInfoElementT &Get() {
+    return *std::static_pointer_cast<ExtraInfoElementT>(Get(ExtraInfoElementT::ID));
+  }
+  template <typename ExtraInfoElementT>
+  const ExtraInfoElementT &Get() const {
+    return *std::static_pointer_cast<ExtraInfoElementT>(Get(ExtraInfoElementT::ID));
+  }
+
+  template <typename ExtraInfoElementT>
+  void Set(ExtraInfoElementT element) {
+    if constexpr (std::is_same_v<ExtraInfoElementT, ExtraInfoElement::Tp>) {
+      #ifdef PSD_DEBUG 
+      insertion_order_.push_back(element->GetID());
+      #endif 
+      data_[element->GetID()] = element;
+    } else {
+      Set(std::make_shared<ExtraInfoElement>(std::move(element)));
+    }
   }
 
   void Clear() {
@@ -233,6 +248,13 @@ public:
       header = stream_.Read<ExtraInfoElement::Header>();
 
       switch (header.id) {
+        case UnicodeName::ID: {
+          output.Set(stream_.Read<ExtraInfoElement::Tp>(CrTuple(
+            header,
+            std::make_shared<UnicodeName>()
+          )));
+          break;
+        }
         #ifdef PSD_DEBUG
         default: {
           output.Set(stream_.Read<ExtraInfoElement::Tp>(CrTuple(
