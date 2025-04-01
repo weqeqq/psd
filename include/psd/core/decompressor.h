@@ -25,7 +25,7 @@ public:
     Compression::Tp compression, std::uint64_t row_count, std::uint64_t column_count
   ) const {
     switch (compression) {
-      case Compression::RAW: return input_;
+      case Compression::None: return input_;
       case Compression::RLE: return DecompressRLE(row_count, column_count);
       default: {
         throw std::runtime_error("Unsupported compression");

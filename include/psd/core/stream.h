@@ -196,7 +196,7 @@ public:
     file.read(reinterpret_cast<char *>(buffer_.data()), buffer_.size());
     file.close();
   }
-  Stream(std::string &path) : Stream(path.c_str()) {}
+  Stream(const std::string &path) : Stream(path.c_str()) {}
 
   std::uint64_t GetPos() const {
     return pos_;
@@ -406,7 +406,7 @@ public:
     Write<std::basic_string<CTe>>(input);
   }
 
-  void ToFile(const char *path) {
+  void To(const char *path) {
     std::ofstream file(path, std::ios::binary);
 
     if (!file) {
@@ -415,8 +415,8 @@ public:
     file.write(reinterpret_cast<const char *>(buffer_.data()), buffer_.size());
     file.close();
   }
-  void ToFile(const std::string &path) {
-    ToFile(path.c_str());
+  void To(const std::string &path) {
+    To(path.c_str());
   }
 
 private:

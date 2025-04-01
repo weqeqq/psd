@@ -6,9 +6,80 @@
 #include <psd/structure/main_info/layer_info/channel_data.h>
 
 namespace PSD {
+namespace StructureImpl {
 
 template <typename ChannelDataT>
-class LayerInfoTemplate {
+class LayerInfoElement {
+public:
+
+  class Compressor;
+  class Decompressor;
+
+  static constexpr Depth::Tp DepthValue = ChannelDataT::DepthValue;
+  static constexpr Color::Tp ColorValue = ChannelDataT::ColorValue;
+
+  bool operator==(const LayerInfoElement &other) const {
+    return layer_data   == other.layer_data   &&
+           channel_data == other.channel_data;
+  }
+  bool operator!=(const LayerInfoElement &other) const {
+    return !operator==(other);
+  }
+
+  LayerData    layer_data;
+  ChannelDataT channel_data;
+};
+};
+
+template <Depth::Tp DepthV, 
+          Color::Tp ColorV>
+using LayerInfoElement = StructureImpl::LayerInfoElement<ChannelData<DepthV, ColorV>>;
+
+template <Depth::Tp DepthV = Depth::Eight,
+          Color::Tp ColorV = Color::RGB> 
+using CompressedLayerInfoElement = StructureImpl::LayerInfoElement<CompressedChannelData<DepthV, ColorV>>;
+
+template <typename ChannelDataT>
+class StructureImpl::LayerInfoElement<ChannelDataT>::Compressor {
+public:
+
+  explicit Compressor(StructureImpl::LayerInfoElement<ChannelDataT> input) 
+    : input_(std::move(input)) {}
+
+  auto Compress(Compression::Tp compression) {
+    CompressedLayerInfoElement<DepthValue, ColorValue> output;
+
+    output.layer_data   = std::move(input_.layer_data);
+    output.channel_data = PSD::Compressor(std::move(input_.channel_data)).Compress(compression);
+
+    return output;
+  }
+private:
+  StructureImpl::LayerInfoElement<ChannelDataT> input_;
+};
+template <typename ChannelDataT>
+class StructureImpl::LayerInfoElement<ChannelDataT>::Decompressor {
+public:
+
+  explicit Decompressor(StructureImpl::LayerInfoElement<ChannelDataT> input) 
+    : input_(std::move(input)) {}
+
+  auto Decompress() {
+    PSD::LayerInfoElement<DepthValue, ColorValue> output;
+
+    output.layer_data   = std::move(input_.layer_data);
+    output.channel_data = PSD::Decompressor(std::move(input_.channel_data)).Decompress();
+
+    return output;
+  }
+private:
+  StructureImpl::LayerInfoElement<ChannelDataT> input_;
+};
+
+namespace StructureImpl {
+
+template <typename ChannelDataT>
+class LayerInfo {
 public:
 
   class LengthCalculator;
@@ -26,95 +97,166 @@ public:
 
   static_assert(IsCompressed || IsDecompressed);
 
-  explicit LayerInfoTemplate() = default;
+  explicit LayerInfo() = default;
 
-  bool operator==(const LayerInfoTemplate &other) const {
-    return layer_count  == other.layer_count &&
-           layer_data   == other.layer_data  &&
-           channel_data == other.channel_data;
+  bool operator==(const LayerInfo &other) const {
+    return element_list_ == other.element_list_;
   }
-  bool operator!=(const LayerInfoTemplate &other) const {
+  bool operator!=(const LayerInfo &other) const {
     return !operator==(other);
   }
 
-  std::uint16_t             layer_count = 0;
-  std::vector<LayerData>    layer_data;
-  std::vector<ChannelDataT> channel_data;
+  decltype(auto) operator[](std::uint64_t index) {
+    return element_list_[index];
+  }
+  decltype(auto) operator[](std::uint64_t index) const {
+    return element_list_[index];
+  }
+
+  using Iterator      = typename std::vector<LayerInfoElement<ChannelDataT>>::iterator;
+  using ConstIterator = typename std::vector<LayerInfoElement<ChannelDataT>>::const_iterator;
+
+  using RevIterator      = typename std::vector<LayerInfoElement<ChannelDataT>>::reverse_iterator;
+  using ConstRevIterator = typename std::vector<LayerInfoElement<ChannelDataT>>::const_reverse_iterator;
+
+  void Push(LayerInfoElement<ChannelDataT> element) {
+    element_list_.push_back(std::move(element));
+  }
+  template <typename InputIterator>
+  void Insert(Iterator iterator, InputIterator begin, InputIterator end) {
+    element_list_.insert(iterator, begin, end);
+  }
+
+  void ChangeLayerCount(std::uint64_t layer_count) {
+    element_list_.resize(layer_count);
+  }
+
+  std::uint64_t GetLayerCount() const {
+    return element_list_.size();
+  }
+  bool IsEmpty() const {
+    return !GetLayerCount();
+  }
+
+  auto Begin() {
+    return element_list_.begin();
+  }
+  auto Begin() const {
+    return element_list_.begin();
+  }
+  auto ConstBegin() const {
+    return element_list_.begin();
+  }
+  auto RevBegin() {
+    return element_list_.rbegin();
+  }
+  auto RevBegin() const {
+    return element_list_.rbegin();
+  }
+  auto ConstRevBegin() const {
+    return RevBegin();
+  }
+  auto End() {
+    return element_list_.end();
+  }
+  auto End() const {
+    return element_list_.end();
+  }
+  auto ConstEnd() const {
+    return End();
+  }
+  auto RevEnd() {
+    return element_list_.rend();
+  }
+  auto RevEnd() const {
+    return element_list_.rend();
+  }
+  auto ConstRevEnd() const {
+    return RevEnd();
+  }
 
 private:
+  std::vector<StructureImpl::LayerInfoElement<ChannelDataT>> element_list_;
+
   std::uint64_t CalculateContentLength() const {
-    if (layer_count == 0) { 
+    if (element_list_.empty()) {
       return 0;
     }
-    std::uint64_t output = sizeof layer_count;
-    for (auto index = 0u; 
-              index < layer_count; 
-              index++) {
-      output += PSD::LengthCalculator(layer_data   [index]).Calculate();
-      output += PSD::LengthCalculator(channel_data [index]).Calculate();
+    std::uint64_t output = sizeof(std::uint16_t);
+    for (auto &element : element_list_) {
+      output += PSD::LengthCalculator(element.layer_data)   .Calculate();
+      output += PSD::LengthCalculator(element.channel_data) .Calculate();
     }
     return output;
   }
-
-}; // LayerInfoTemplate
-
-template <Depth::Tp DepthV = Depth::Eight, Color::Tp ColorV = Color::RGB>
-using LayerInfo = LayerInfoTemplate<ChannelData<DepthV, ColorV>>;
+};
 
 template <typename ChannelDataT>
-using ToLayerInfo = LayerInfo<ChannelDataT::DepthValue, ChannelDataT::ColorValue>;
+static auto begin(LayerInfo<ChannelDataT> &input) {
+  return input.Begin();
+}
+template <typename ChannelDataT>
+static auto begin(const LayerInfo<ChannelDataT> &input) {
+  return input.Begin();
+};
+template <typename ChannelDataT>
+static auto end(LayerInfo<ChannelDataT> &input) {
+  return input.End();
+}
+template <typename ChannelDataT>
+static auto end(const LayerInfo<ChannelDataT> &input) {
+  return input.End();
+}
+};
 
-template <Depth::Tp DepthV = Depth::Eight, Color::Tp ColorV = Color::RGB>
-using CompressedLayerInfo = LayerInfoTemplate<CompressedChannelData<DepthV, ColorV>>;
+template <Depth::Tp DepthV = Depth::Eight, 
+          Color::Tp ColorV = Color::RGB>
+using LayerInfo = StructureImpl::LayerInfo<ChannelData<DepthV, ColorV>>;
+
+template <Depth::Tp DepthV = Depth::Eight, 
+          Color::Tp ColorV = Color::RGB>
+using CompressedLayerInfo = StructureImpl::LayerInfo<CompressedChannelData<DepthV, ColorV>>;
 
 template <typename ChannelDataT>
-using ToCompressedLayerInfo = CompressedLayerInfo<ChannelDataT::DepthValue, ChannelDataT::ColorValue>;
-
-template <typename ChannelDataT>
-class LayerInfoTemplate<ChannelDataT>::LengthCalculator {
+class StructureImpl::LayerInfo<ChannelDataT>::LengthCalculator {
 public:
-  explicit LengthCalculator(const LayerInfoTemplate<ChannelDataT> &input) : input_(input) {}
+  explicit LengthCalculator(const StructureImpl::LayerInfo<ChannelDataT> &input) : input_(input) {}
 
   std::uint64_t Calculate() const {
     return input_.CalculateContentLength() + sizeof(std::uint32_t);
   }
-
 private:
-  const LayerInfoTemplate<ChannelDataT> &input_;
-
-}; // LayerInfoTemplate<ChannelDataT>::LengthCalculator
-
+  const StructureImpl::LayerInfo<ChannelDataT> &input_;
+}; 
 PSD_REGISTER_LENGTH_CALCULATOR_FOR_BUFFER(LayerInfo);
 PSD_REGISTER_LENGTH_CALCULATOR_FOR_BUFFER(CompressedLayerInfo);
 
 template <typename ChannelDataT>
-class LayerInfoTemplate<ChannelDataT>::Reader {
+class StructureImpl::LayerInfo<ChannelDataT>::Reader {
 public:
 
   static_assert(IsCompressed);
 
   explicit Reader(Stream &stream) : stream_(stream) {}
 
-  LayerInfoTemplate<ChannelDataT> Read() {
-    LayerInfoTemplate<ChannelDataT> output;
-
-    std::uint64_t start = stream_.GetPos();
-
+  StructureImpl::LayerInfo<ChannelDataT> Read() {
     if (stream_.Read<std::uint32_t>() == 0) {
-      return output;
+      return StructureImpl::LayerInfo<ChannelDataT>();
     }
-    output.layer_count = stream_.Read<std::uint16_t>();
-    for (auto index = 0u; 
-              index < output.layer_count; 
-              index++) {
-      output.layer_data.push_back(stream_.Read<LayerData>());
+    StructureImpl::LayerInfo<ChannelDataT> output;
+
+    auto start       = stream_.GetPos();
+    auto layer_count = stream_.Read<std::uint16_t>();
+
+    output.ChangeLayerCount(layer_count);
+
+    for (auto &element : output) {
+      element.layer_data = stream_.Read<LayerData>();
     }
-    for (auto index = 0u; 
-              index < output.layer_count; 
-              index++) {
-      output.channel_data.push_back(stream_.Read<ChannelDataT>(CrTuple(
-        output.layer_data[index] 
-      )));
+    for (auto &element : output) {
+      element.channel_data = stream_.Read<ChannelDataT>(CrTuple(
+        element.layer_data
+      ));
     }
     if ((stream_.GetPos() - start) % 2) {
       stream_.IncPos();
@@ -125,131 +267,99 @@ public:
 private:
   Stream &stream_;
 
-}; // LayerInfoTemplate<ChannelDataT>::Reader
-
+}; 
 PSD_REGISTER_READER_FOR_BUFFER(CompressedLayerInfo);
 
-
 template <typename ChannelDataT>
-class LayerInfoTemplate<ChannelDataT>::Writer {
+class StructureImpl::LayerInfo<ChannelDataT>::Writer {
 public:
 
-  explicit Writer(Stream &stream, const LayerInfoTemplate<ChannelDataT> &input) : stream_(stream), input_(input) {}
+  explicit Writer(Stream &stream, const StructureImpl::LayerInfo<ChannelDataT> &input) 
+    : stream_ (stream)
+    , input_  (input) {}
 
   void Write() {
     stream_.Write(std::uint32_t(
       input_.CalculateContentLength()
     ));
-    if (!input_.layer_count) {
+    if (input_.IsEmpty()) {
       return;
     }
-    stream_.Write(input_.layer_count);
-    for (auto index = 0u;
-              index < input_.layer_count;
-              index++) {
-      stream_.Write(input_.layer_data[index]);
+    stream_.Write<std::uint16_t>(input_.GetLayerCount());
+    for (decltype(auto) element : input_) {
+      stream_.Write(element.layer_data);
     }
-    for (auto index = 0u;
-              index < input_.layer_count;
-              index++) {
-      stream_.Write(input_.channel_data[index]);
+    for (decltype(auto) element : input_) {
+      stream_.Write(element.channel_data);
     }
   }
-
 private:
   Stream &stream_;
-  const LayerInfoTemplate<ChannelDataT> &input_;
-
-}; // LayerInfoTemplate<ChannelDataT>::Writer
-
+  const StructureImpl::LayerInfo<ChannelDataT> &input_;
+}; 
 PSD_REGISTER_WRITER_FOR_BUFFER(LayerInfo);
 PSD_REGISTER_WRITER_FOR_BUFFER(CompressedLayerInfo);
 
 template <typename ChannelDataT>
-class LayerInfoTemplate<ChannelDataT>::Compressor {
+class StructureImpl::LayerInfo<ChannelDataT>::Compressor {
 public:
 
   static_assert(IsDecompressed);
 
-  explicit Compressor(LayerInfoTemplate<ChannelDataT> input) : input_(std::move(input)) {}
+  explicit Compressor(StructureImpl::LayerInfo<ChannelDataT> input) : input_(std::move(input)) {}
 
-  ToCompressedLayerInfo<ChannelDataT> Compress(
-    std::vector<std::map<std::int16_t, Compression::Tp>> compression
-  ) {
-    ToCompressedLayerInfo<ChannelDataT> output;
+  auto Compress(Compression::Tp compression) {
+    CompressedLayerInfo<DepthValue, ColorValue> output;
 
-    output.layer_count  = std::move(input_.layer_count);
-    output.layer_data   = std::move(input_.layer_data);
+    for (decltype(auto) element : input_) {
+      CompressedLayerInfoElement<DepthValue, ColorValue> output_element;
 
-    for (auto index = 0u;
-              index < output.layer_count;
-              index++) {
-      output.channel_data.push_back(
-        PSD::Compressor(input_.channel_data).Compress(
-          compression       [index],
-          output.layer_data [index]
-        )
+      output_element.layer_data   = std::move(element.layer_data);
+      output_element.channel_data = PSD::Compressor(element.channel_data).Compress(
+        compression,
+        output_element.layer_data
       );
-    }
-    return output;
-  }
-  ToCompressedLayerInfo<ChannelDataT> Compress(Compression::Tp compression) {
-    ToCompressedLayerInfo<ChannelDataT> output;
+      output_element.layer_data.channel_info = PSD::ChannelInfoCreator(output_element.channel_data).Create();
 
-    output.layer_count  = std::move(input_.layer_count);
-    output.layer_data   = std::move(input_.layer_data);
-
-    for (auto index = 0u;
-              index < output.layer_count;
-              index++) {
-      output.channel_data.push_back(
-        PSD::Compressor(input_.channel_data[index]).Compress(
-          compression,
-          output.layer_data[index]
-        )
-      );
+      output.Push(output_element);
     }
     return output;
   }
 
 private:
-  LayerInfoTemplate<ChannelDataT> input_;
+  StructureImpl::LayerInfo<ChannelDataT> input_;
 
-}; // LayerInfoTemplate<ChannelDataT>::Compressor
-
+};
 PSD_REGISTER_COMPRESSOR_FOR_BUFFER(LayerInfo);
 
 template <typename ChannelDataT>
-class LayerInfoTemplate<ChannelDataT>::Decompressor {
+class StructureImpl::LayerInfo<ChannelDataT>::Decompressor {
 public:
 
   static_assert(IsCompressed);
 
-  explicit Decompressor(const LayerInfoTemplate<ChannelDataT> &input) : input_(input) {}
+  explicit Decompressor(const StructureImpl::LayerInfo<ChannelDataT> &input) : input_(input) {}
 
-  ToLayerInfo<ChannelDataT> Decompress(const Header &header) const {
-    ToLayerInfo<ChannelDataT> output;
+  auto Decompress(const Header &header) const {
+    PSD::LayerInfo<DepthValue, ColorValue> output;
 
-    output.layer_count = std::move(input_.layer_count);
-    output.layer_data  = std::move(input_.layer_data);
+    for (auto &element : input_) {
+      PSD::LayerInfoElement<DepthValue, ColorValue> output_element;
 
-    for (auto index = 0u;
-              index < output.layer_count;
-              index++) {
-      output.channel_data.push_back(
-        PSD::Decompressor(input_.channel_data[index]).Decompress(
-          header,
-          output.layer_data[index]
-        )
+      output_element.layer_data   = std::move(element.layer_data);
+      output_element.channel_data = PSD::Decompressor(element.channel_data).Decompress(
+        header,
+        output_element.layer_data
       );
+      output.Push(output_element);
     }
     return output;
   }
 
 private:
-  const LayerInfoTemplate<ChannelDataT> &input_;
+  const StructureImpl::LayerInfo<ChannelDataT> &input_;
 
-}; // LayerInfoTemplate<ChannelDataT>::Decompressor
+}; // StructureImpl::LayerInfo<ChannelDataT>::Decompressor
 
 PSD_REGISTER_DECOMPRESSOR_FOR_BUFFER(CompressedLayerInfo);
   

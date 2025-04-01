@@ -2,6 +2,7 @@
 
 #include <psd/structure/main_info/extra_info_element.h>
 #include <psd/structure/main_info/extra_info/unicode_name.h>
+#include <psd/structure/main_info/extra_info/section_divider.h>
 
 #include <iomanip>
 
@@ -71,16 +72,22 @@ public:
     return *std::static_pointer_cast<ExtraInfoElementT>(Get(ExtraInfoElementT::ID));
   }
 
-  template <typename ExtraInfoElementT>
-  void Set(ExtraInfoElementT element) {
-    if constexpr (std::is_same_v<ExtraInfoElementT, ExtraInfoElement::Tp>) {
+  template <typename ElementT>
+  void Set(ElementT element) {
+    if constexpr (std::is_same_v<ElementT, ExtraInfoElement::Tp>) {
       #ifdef PSD_DEBUG 
       insertion_order_.push_back(element->GetID());
       #endif 
       data_[element->GetID()] = element;
     } else {
-      Set(std::make_shared<ExtraInfoElement>(std::move(element)));
+      Set(std::static_pointer_cast<ExtraInfoElement>(
+        std::make_shared<ElementT>(std::move(element))
+      ));
     }
+  }
+  template <typename ElementT, typename... ArgumentsT>
+  void Emplace(ArgumentsT&&... arguments) {
+    Set(ElementT(std::forward<ArgumentsT>(arguments)...));
   }
 
   void Clear() {
@@ -252,6 +259,13 @@ public:
           output.Set(stream_.Read<ExtraInfoElement::Tp>(CrTuple(
             header,
             std::make_shared<UnicodeName>()
+          )));
+          break;
+        }
+        case SectionDivider::ID: {
+          output.Set(stream_.Read<ExtraInfoElement::Tp>(CrTuple(
+            header,
+            std::make_shared<SectionDivider>()
           )));
           break;
         }

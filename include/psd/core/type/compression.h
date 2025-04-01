@@ -16,7 +16,7 @@ public:
   Compression() = delete;
 
   enum Tp : std::uint16_t {
-    RAW,
+    None,
     RLE,
     ZIP,
     ZIPP
@@ -63,7 +63,7 @@ public:
 
   Compression::Tp Read() {
     switch (stream_.Read<UnderlyingTp>()) {
-      case UnderlyingValue<Compression::RAW>  : return Compression::RAW;
+      case UnderlyingValue<Compression::None>  : return Compression::None;
       case UnderlyingValue<Compression::RLE>  : return Compression::RLE;
       case UnderlyingValue<Compression::ZIP>  : return Compression::ZIP;
       case UnderlyingValue<Compression::ZIPP> : return Compression::ZIPP;

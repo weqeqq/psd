@@ -5,7 +5,7 @@
 #include <psd/core/length_calculator.h>
 #include <psd/core/type/rectangle.h>
 #include <psd/core/type/error.h>
-#include <psd/core/type/blend.h>
+#include <psd/core/type/blending.h>
 
 #include <psd/structure/main_info/extra_info.h>
 
@@ -200,7 +200,7 @@ public:
       rectangle,
       channel_count,
       channel_info,
-      blend,
+      blending,
       opacity,
       clipping,
       transparency_protected,
@@ -217,7 +217,7 @@ public:
       other.rectangle,
       other.channel_count,
       other.channel_info,
-      other.blend,
+      other.blending,
       other.opacity,
       other.clipping,
       other.transparency_protected,
@@ -238,15 +238,15 @@ public:
   Rectangle     rectangle;
   std::uint16_t channel_count;
   ChannelInfo   channel_info;
-  Blend::Tp     blend;
+  Blending::Tp  blending;
   std::uint8_t  opacity;
   std::uint8_t  clipping;
 
-  bool transparency_protected;
-  bool visible;
-  bool obsolete;
-  bool useful_info;
-  bool irrelievant_to_appearance;
+  bool transparency_protected    = false;
+  bool visible                   = false;
+  bool obsolete                  = false;
+  bool useful_info               = false;
+  bool irrelievant_to_appearance = false;
 
   AdjustmentLayerData adjustment_data;
   BlendingInfo        blending_info;
@@ -297,7 +297,7 @@ public:
 
     ReadBlendSignature();
 
-    output.blend    = stream_.Read<Blend::Tp>();
+    output.blending = stream_.Read<Blending::Tp>();
     output.opacity  = stream_.Read<std::uint8_t>();
     output.clipping = stream_.Read<std::uint8_t>();
 
@@ -353,7 +353,7 @@ public:
 
     WriteBlendSignature();
 
-    stream_.Write(input_.blend);
+    stream_.Write(input_.blending);
     stream_.Write(input_.opacity);
     stream_.Write(input_.clipping);
 

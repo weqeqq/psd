@@ -22,7 +22,7 @@ public:
     Compression::Tp compression, std::uint64_t row_count, std::uint64_t column_count
   ) {
     switch (compression) {
-      case Compression::RAW: return input_;
+      case Compression::None: return input_;
       case Compression::RLE: return CompressRLE(row_count, column_count);
       default: throw std::runtime_error("unsupported");
     }

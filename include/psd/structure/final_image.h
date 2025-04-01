@@ -68,7 +68,7 @@ public:
 
   explicit FinalImage(std::uint64_t row_count, std::uint64_t column_count) : buffer(row_count, column_count) {}
 
-  Image::Buffer<DepthV, ColorV> buffer;
+  Image::Buffer<DepthV, ColorV> buffer = Image::Buffer<DepthV, ColorV>();
 
 }; // FinalImage 
 
@@ -194,6 +194,7 @@ public:
 
   CompressedFinalImage<DepthV, ColorV> Compress(Compression::Tp compression) const {
     CompressedFinalImage<DepthV, ColorV> output;
+    output.compression_ = compression;
 
     std::array<Image::Buffer<DepthV, Color::Grayscale>, Color::ChannelCount<ColorV>> channel_list;
 
@@ -221,7 +222,6 @@ public:
       input_.buffer.GetRCount() * Color::ChannelCount<ColorV>,
       input_.buffer.GetCCount()
     );
-    output.compression_ = compression;
     return output;
   }
 

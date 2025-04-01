@@ -180,10 +180,8 @@ public:
 
   ExtraInfoElement::Tp Read(const Header &header, ExtraInfoElement::Tp ptr) {
     ptr->ReadContent(stream_, header);
-    
-    for (auto length = header.content_length; 
-              length % 2;
-              length++) {
+
+    if (header.content_length % 2) {
       stream_.IncPos();
     }
     return ptr;
@@ -246,11 +244,6 @@ public:
   void ReadContent(Stream &stream, const Header &header) override {
     id_      = header.id;
     content_ = stream.Read<std::uint8_t>(header.content_length);
-    /*content_ = stream.Read<std::uint8_t>(*/
-    /*  header.content_length % 2 */
-    /*    ? header.content_length + 1 */
-    /*    : header.content_length + 0*/
-    /*);*/
   }
   void WriteContent(Stream &stream) const override {
     stream.Write(content_);

@@ -29,10 +29,10 @@ public:
     }
   }
   explicit CompressionInfo(Compression::Tp compression)   
-    : tmask_compression       (compression)
-    , umask_compression       (compression)
-    , rmask_compression       (compression)
-    , final_image_compression (compression) {
+    : transparency   (compression)
+    , user_mask      (compression)
+    , real_user_mask (compression)
+    , final_image    (compression) {
     for (auto &value : data_compression) {
       value = compression;
     }
@@ -43,16 +43,16 @@ public:
     Compression::Tp umask_compression,
     Compression::Tp rmask_compression
   ) : data_compression  (data_compression) 
-    , tmask_compression (tmask_compression)
-    , umask_compression (umask_compression) 
-    , rmask_compression (rmask_compression) {}
+    , transparency (tmask_compression)
+    , user_mask (umask_compression) 
+    , real_user_mask (rmask_compression) {}
   Compression::Tp data_compression[Color::ChannelCount<ColorV>];
   
-  Compression::Tp tmask_compression = DefaultCompression;
-  Compression::Tp umask_compression = DefaultCompression;
-  Compression::Tp rmask_compression = DefaultCompression;
+  Compression::Tp transparency = DefaultCompression;
+  Compression::Tp user_mask = DefaultCompression;
+  Compression::Tp real_user_mask = DefaultCompression;
 
-  Compression::Tp final_image_compression;
+  Compression::Tp final_image;
 
 }; // CompressionInfo
 
@@ -65,16 +65,6 @@ public:
   explicit ChannelInfoCreator(ChannelDataT) {}
 
 }; // ChannelInfoCreator
-
-template <typename T>
-class CompressionInfoCreator {
-public:
-  
-  static_assert(false);
-
-  explicit CompressionInfoCreator(T) {};
-
-}; // CompressionInfoCreator
 
 class CompressedChannel {
 public:
@@ -120,7 +110,7 @@ public:
 
   std::uint64_t Calculate() const {
     if (input_.IsEmpty()) {
-      return 0;
+      return PSD::LengthCalculator(input_.compression_).Calculate();
     }
     return PSD::LengthCalculator(input_.compression_).Calculate() + input_.data_.size();
   }
@@ -186,7 +176,8 @@ private:
 }; // CompressedChannel::Decompressor
 PSD_REGISTER_DECOMPRESSOR(CompressedChannel);
 
-template <Depth::Tp DepthV = Depth::Eight, Color::Tp ColorV = Color::RGB>
+template <Depth::Tp DepthV = Depth::Eight, 
+          Color::Tp ColorV = Color::RGB>
 class CompressedChannelData {
 public:
 
@@ -200,34 +191,34 @@ public:
   static constexpr bool IsDecompressed = false;
 
   class LengthCalculator;
-
   class Reader;
   class Writer;
-
-  class Compressor;
   class Decompressor;
 
   static constexpr Depth::Tp DepthValue = DepthV;
   static constexpr Color::Tp ColorValue = ColorV;
 
-  static constexpr std::int16_t TransparencyID = -1;
-  static constexpr std::int16_t MaskID         = -2;
+  static constexpr std::int16_t TMaskID = -1;
+  static constexpr std::int16_t UMaskID = -2;
+  static constexpr std::int16_t RMaskID = -3;
 
   explicit CompressedChannelData() = default;
 
   bool operator==(const CompressedChannelData &other) const {
-    return data_         == other.data_         &&
-           transparency_ == other.transparency_ &&
-           mask_         == other.mask_;
+    return channel_list_  == other.channel_list_ &&
+           tmask_         == other.tmask_        &&
+           umask_         == other.umask_        &&
+           rmask_         == other.rmask_;
   }
   bool operator!=(const CompressedChannelData &other) const {
     return !operator==(other);
   }
 private:
-  CompressedChannel data_[Color::ChannelCount<ColorV>];
+  CompressedChannel channel_list_[Color::ChannelCount<ColorV>];
 
-  CompressedChannel transparency_;
-  CompressedChannel mask_;
+  CompressedChannel tmask_;
+  CompressedChannel umask_;
+  CompressedChannel rmask_;
 
 }; // CompressedChannelData
 
@@ -243,73 +234,50 @@ public:
   static constexpr Depth::Tp DepthValue = DepthV;
   static constexpr Color::Tp ColorValue = ColorV;
 
-  static constexpr std::int16_t TransparencyID = -1;
-  static constexpr std::int16_t MaskID         = -2;
+  static constexpr std::int16_t TMaskID = -1;
+  static constexpr std::int16_t UMaskID = -2;
+  static constexpr std::int16_t RMaskID = -2;
+
+  using BufferTp  = Image::Buffer<DepthV, ColorV>;
+  using ChannelTp = Image::Buffer<DepthV, Color::Grayscale>;
 
   explicit ChannelData() = default;
 
-  Image::Buffer<DepthV, ColorV> data;
+  explicit ChannelData(
+    BufferTp buffer,
+    ChannelTp tmask, 
+    ChannelTp umask,
+    ChannelTp rmask
+  ) : buffer (std::move(buffer))
+    , alpha  (std::move(tmask)) 
+    , user_mask  (std::move(umask)) 
+    , real_user_mask  (std::move(rmask)) {}
 
-  Image::Buffer<DepthV, Color::Grayscale> transparency;
-  Image::Buffer<DepthV, Color::Grayscale> mask;
+  explicit ChannelData(
+    BufferTp buffer,
+    ChannelTp tmask,
+    ChannelTp umask
+  ) : buffer (std::move(buffer)) 
+    , alpha  (std::move(tmask)) 
+    , user_mask  (std::move(umask)) {}
+
+  explicit ChannelData(
+    BufferTp buffer,
+    ChannelTp tmask
+  ) : buffer (std::move(buffer)) 
+    , alpha  (std::move(tmask)) {}
+
+  explicit ChannelData(
+    BufferTp buffer
+  ) : buffer (std::move(buffer)) {}
+
+  Image::Buffer<DepthV, ColorV> buffer;
+
+  Image::Buffer<DepthV, Color::Grayscale> alpha;
+  Image::Buffer<DepthV, Color::Grayscale> user_mask;
+  Image::Buffer<DepthV, Color::Grayscale> real_user_mask;
 
 }; // ChannelData
-
-template <Depth::Tp DepthV, Color::Tp ColorV>
-class ChannelInfoCreator<CompressedChannelData<DepthV, ColorV>> {
-public:
-
-  explicit ChannelInfoCreator(const CompressedChannelData<DepthV, ColorV> &input) : input_(input) {}
-
-  ChannelInfo Create() const {
-    ChannelInfo output;
-
-    for (auto index = 0u;
-              index < Color::ChannelCount<ColorV>;
-              index++) {
-      output[index] = PSD::LengthCalculator(input_.data_[index]).Calculate();
-    }
-    if (!input_.transparency_.IsEmpty()) {
-      output[input_.TransparencyID] = PSD::LengthCalculator(input_.transparency_).Calculate();
-    }
-    if (!input_.mask_.IsEmpty()) {
-      output[input_.MaskID] = PSD::LengthCalculator(input_.mask_).Calculate();
-    }
-    return output;
-  }
-
-private:
-  const CompressedChannelData<DepthV, ColorV> &input_;
-
-}; // ChannelInfoCreator<CompressedChannelData>
-
-template <Depth::Tp DepthV, Color::Tp ColorV>
-class ChannelInfoCreator<ChannelData<DepthV, ColorV>> {
-public:
-
-  explicit ChannelInfoCreator(const ChannelData<DepthV, ColorV> &input) : input_(input) {}
-
-  ChannelInfo Create() const {
-    ChannelInfo output;
-
-    for (auto index = 0u;
-              index < Color::ChannelCount<ColorV>;
-              index++) {
-      output[index] = input_.data.GetBCount() / Color::ChannelCount<ColorV>;
-    }
-    if (input_.transparency.GetLength()) {
-      output[input_.TransparencyID] = input_.transparency.GetBCount();
-    }
-    if (input_.mask.GetLength()) {
-      output[input_.MaskID] = input_.mask.GetBCount();
-    }
-    return output;
-  }
-
-private:
-  const ChannelData<DepthV, ColorV> &input_;
-
-}; // ChanenlInfoCreator<ChannelData<DepthV, ColorV>>
 
 template <Depth::Tp DepthV, Color::Tp ColorV>
 class CompressedChannelData<DepthV, ColorV>::LengthCalculator {
@@ -319,11 +287,18 @@ public:
   std::uint64_t Calculate() const { 
     std::uint64_t output = 0;
 
-    for (const auto &compressed_channel : input_.data_) {
+    for (const auto &compressed_channel : input_.channel_list_) {
       output += PSD::LengthCalculator(compressed_channel).Calculate();
     }
-    output += PSD::LengthCalculator(input_.transparency_) .Calculate();
-    output += PSD::LengthCalculator(input_.mask_)         .Calculate();
+
+    /*if (!input_.transparency_.IsEmpty()) {*/
+      output += PSD::LengthCalculator(input_.tmask_).Calculate();
+    /*}*/
+    if (!input_.umask_.IsEmpty()) {
+      output += PSD::LengthCalculator(input_.umask_).Calculate();
+    }
+    /*output += PSD::LengthCalculator(input_.transparency_) .Calculate();*/
+    /*output += PSD::LengthCalculator(input_.mask_)         .Calculate();*/
 
     return output;
   };
@@ -347,16 +322,16 @@ public:
         PSD::CrTuple(channel_length)
       );
       switch (channel_id) {
-        case TransparencyID: {
-          output.transparency_ = std::move(channel_data);
+        case TMaskID: {
+          output.tmask_ = std::move(channel_data);
           break;
         }
-        case MaskID: {
-          output.mask_ = std::move(channel_data);
+        case UMaskID: {
+          output.umask_ = std::move(channel_data);
           break;
         }
         default: {
-          output.data_[channel_id] = std::move(channel_data);
+          output.channel_list_[channel_id] = std::move(channel_data);
           break;
         }
       }
@@ -369,26 +344,27 @@ private:
 }; // CompressedChannelData<DepthV, ColorV>
 PSD_REGISTER_READER_FOR_BUFFER(CompressedChannelData);
 
-template <Depth::Tp DepthV, Color::Tp ColorV> 
+template <Depth::Tp DepthV, 
+          Color::Tp ColorV> 
 class CompressedChannelData<DepthV, ColorV>::Writer {
 public:
-  explicit Writer(Stream &stream, const CompressedChannelData<DepthV, ColorV> &input) : stream_(stream), input_(input) {}
+
+  explicit Writer(Stream &stream, const CompressedChannelData<DepthV, ColorV> &input) 
+    : stream_ (stream)
+    , input_  (input) {}
 
   void Write() {
-    auto start = stream_.GetPos();
+    stream_.Write(input_.tmask_);
 
-    if (!input_.transparency_.IsEmpty()) {
-      stream_.Write(input_.transparency_);
-    }
-    for (auto channel : input_.data_) {
+    for (auto channel : input_.channel_list_) {
       stream_.Write(channel);
     }
-    if (!input_.mask_.IsEmpty()) {
-      stream_.Write(input_.mask_);
+    if (!input_.umask_.IsEmpty()) {
+      stream_.Write(input_.umask_);
     }
-    stream_.Write(std::vector<std::uint8_t>(
-      PSD::LengthCalculator(input_).Calculate() - (stream_.GetPos() - start), 0
-    ));
+    if (!input_.rmask_.IsEmpty()) {
+      stream_.Write(input_.rmask_);
+    }
   }
 private:
   Stream &stream_;
@@ -407,12 +383,15 @@ public:
   ChannelData<DepthV, ColorV> Decompress(const Header &header, const LayerData &layer_data) const {
     ChannelData<DepthV, ColorV> output;
 
-    output.data = DecompressData(header, layer_data);
-    if (!input_.transparency_.IsEmpty()) {
-      output.transparency = DecompressChannel(input_.transparency_, header, layer_data);
+    output.buffer = DecompressBuffer(header, layer_data);
+    if (!input_.tmask_.IsEmpty()) {
+      output.alpha = DecompressChannel(input_.tmask_, header, layer_data);
     } 
-    if (!input_.mask_.IsEmpty()) {
-      output.mask = DecompressChannel (input_.mask_, header, layer_data);
+    if (!input_.umask_.IsEmpty()) {
+      output.user_mask = DecompressChannel(input_.umask_, header, layer_data);
+    }
+    if (!input_.rmask_.IsEmpty()) {
+      output.real_user_mask = DecompressChannel(input_.rmask_, header, layer_data);
     }
     return output;
   }
@@ -440,7 +419,7 @@ private:
     #undef CONVERT
   }
 
-  Image::Buffer<DepthV, ColorV> DecompressData(const Header &header, const LayerData &layer_data) const {
+  Image::Buffer<DepthV, ColorV> DecompressBuffer(const Header &header, const LayerData &layer_data) const {
 
     #define CONVERT(InputColorV)                                                                                       \
       (header.color == InputColorV) {                                                                                  \
@@ -448,7 +427,7 @@ private:
         for (auto index = 0u;                                                                                          \
                   index < Color::ChannelCount<InputColorV>;                                                            \
                   index++) {                                                                                           \
-          channel_list[index] = DecompressChannel(input_.data_[index], header, layer_data);                                          \
+          channel_list[index] = DecompressChannel(input_.channel_list_[index], header, layer_data);                    \
         }                                                                                                              \
       return Image::ColorConvertor(Image::Buffer<DepthV, InputColorV>::From(channel_list)).template Convert<ColorV>(); \
     }
@@ -463,6 +442,36 @@ private:
 PSD_REGISTER_DECOMPRESSOR_FOR_BUFFER(CompressedChannelData);
 
 template <Depth::Tp DepthV, Color::Tp ColorV>
+class ChannelInfoCreator<CompressedChannelData<DepthV, ColorV>> {
+public:
+
+  explicit ChannelInfoCreator(const CompressedChannelData<DepthV, ColorV> &input) : input_(input) {}
+
+  ChannelInfo Create() const {
+    ChannelInfo output;
+
+    for (auto index = 0u;
+              index < Color::ChannelCount<ColorV>;
+              index++) {
+      output[index] = PSD::LengthCalculator(input_.channel_list_[index]).Calculate();
+    }
+    output[input_.TMaskID] = PSD::LengthCalculator(input_.tmask_).Calculate();
+
+    if (!input_.umask_.IsEmpty()) {
+      output[input_.UMaskID] = PSD::LengthCalculator(input_.umask_).Calculate();
+    }
+    if (!input_.rmask_.IsEmpty()) {
+      output[input_.RMaskID] = PSD::LengthCalculator(input_.rmask_).Calculate();
+    }
+    return output;
+  }
+
+private:
+  const CompressedChannelData<DepthV, ColorV> &input_;
+
+}; // ChannelInfoCreator<CompressedChannelData>
+
+template <Depth::Tp DepthV, Color::Tp ColorV>
 class ChannelData<DepthV, ColorV>::Compressor {
 public:
 
@@ -473,39 +482,37 @@ public:
   ) const {
     CompressedChannelData<DepthV, ColorV> output;
 
-    if (input_.transparency.GetLength()) {
-      output.transparency_ = PSD::CompressedChannel(
-        compression_info.tmask_compression, 
-        PSD::Compressor(Image::SequenceConvertor(input_.transparency).ToSequence()).Compress(
-          compression_info.tmask_compression,
-          input_.transparency.GetRCount(),
-          input_.transparency.GetCCount()
-        )
+    if (input_.alpha.GetLength()) {
+      output.tmask_ = CompressChannel(
+        compression_info.transparency, 
+        input_.alpha
       );
     }
-    if (input_.mask.GetLength()) {
-      output.mask_ = PSD::CompressedChannel(
-        compression_info.umask_compression, 
-        PSD::Compressor(Image::SequenceConvertor(input_.mask).ToSequence()).Compress(
-          compression_info.umask_compression,
-          input_.mask.GetRCount(),
-          input_.mask.GetCCount()
-        )
+    if (input_.user_mask.GetLength()) {
+      output.umask_ = CompressChannel(
+        compression_info.user_mask,
+        input_.user_mask
+      );
+    }
+    if (input_.real_user_mask.GetLength()) {
+      output.rmask_ = CompressChannel(
+        compression_info.real_user_mask,
+        input_.real_user_mask
       );
     }
 
     Image::Buffer<DepthV, Color::Grayscale> channel_list[Color::ChannelCount<ColorV>];
 
     for (auto &buffer : channel_list) {
-      buffer = Image::Buffer<DepthV, Color::Grayscale>(input_.data.GetRCount(), input_.data.GetCCount());
+      buffer = Image::Buffer<DepthV, Color::Grayscale>(input_.buffer.GetRCount(), input_.buffer.GetCCount());
     }
     for (auto index = 0u; 
-              index < input_.data.GetLength();
+              index < input_.buffer.GetLength();
               index++) {
       for (auto channel_index = 0u;
                 channel_index < Color::ChannelCount<ColorV>;
                 channel_index++) {
-        channel_list[channel_index][index] = input_.data[index][channel_index];
+        channel_list[channel_index][index] = input_.buffer[index][channel_index];
       }
     }
 
@@ -513,12 +520,12 @@ public:
               index < Color::ChannelCount<ColorV>;
               index++) {
       auto compression = compression_info.data_compression[index];
-      output.data_[index] = PSD::CompressedChannel(
+      output.channel_list_[index] = PSD::CompressedChannel(
         compression,
         PSD::Compressor(Image::SequenceConvertor(channel_list[index]).ToSequence()).Compress(
           compression,
-          input_.data.GetRCount(),
-          input_.data.GetCCount()
+          input_.buffer.GetRCount(),
+          input_.buffer.GetCCount()
         )
       );
     }
@@ -532,7 +539,49 @@ public:
 private:
   const ChannelData<DepthV, ColorV> &input_;
 
+  CompressedChannel CompressChannel(Compression::Tp compression, const Image::Buffer<DepthV, Color::Grayscale> &input) const {
+    return CompressedChannel(
+      compression,
+      PSD::Compressor(Image::SequenceConvertor(input).ToSequence()).Compress(
+        compression,
+        input.GetRCount(),
+        input.GetCCount()
+      )
+    );
+  }
+
 }; // ChannelData<DepthV, ColorV>
 PSD_REGISTER_COMPRESSOR_FOR_BUFFER(ChannelData);
+
+template <Depth::Tp DepthV, Color::Tp ColorV>
+class ChannelInfoCreator<ChannelData<DepthV, ColorV>> {
+public:
+
+  explicit ChannelInfoCreator(const ChannelData<DepthV, ColorV> &input) : input_(input) {}
+
+  ChannelInfo Create() const {
+    ChannelInfo output;
+
+    for (auto index = 0u;
+              index < Color::ChannelCount<ColorV>;
+              index++) {
+      output[index] = input_.buffer.GetBCount() / Color::ChannelCount<ColorV>;
+    }
+    output[input_.TMaskID] = input_.alpha.GetBCount();
+
+    if (input_.user_mask.GetLength()) {
+      output[input_.UMaskID] = input_.user_mask.GetBCount();
+    }
+    if (input_.real_user_mask.GetLength()) {
+      output[input_.RMaskID] = input_.real_user_mask.GetBCount();
+    }
+    return output;
+  }
+
+private:
+  const ChannelData<DepthV, ColorV> &input_;
+
+}; // ChanenlInfoCreator<ChannelData<DepthV, ColorV>>
+
 
 }; // PSD
