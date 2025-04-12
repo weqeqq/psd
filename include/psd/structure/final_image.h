@@ -142,6 +142,7 @@ private:
 PSD_REGISTER_LENGTH_CALCULATOR_FOR_BUFFER (CompFinalImage);
 PSD_REGISTER_READER_FOR_BUFFER            (CompFinalImage);
 PSD_REGISTER_WRITER_FOR_BUFFER            (CompFinalImage);
+PSD_REGISTER_DECOMPRESSOR_FOR_BUFFER      (CompFinalImage);
 
 template <Depth::Tp DepthV, 
           Color::Tp ColorV>
@@ -157,7 +158,11 @@ public:
     auto Compress(Compression::Tp compression) {
       return Create(
         compression,
-        PSD::Compressor(Convert()).Compress(compression)
+        PSD::Compressor(Convert()).Compress(
+          compression, 
+          input_.buffer.GetRowCount    (), 
+          input_.buffer.GetColumnCount ()
+        )
       );
     }
   private:
@@ -177,8 +182,11 @@ public:
     auto Convert() {
       Image::Sequence sequence;
 
+      if (input_.buffer.IsEmpty()) {
+        return sequence;
+      }
       for (decltype(auto) channel : Image::ChannelArrayConvertor(input_.buffer).Convert()) {
-        sequence.insert(sequence.end(), channel.begin(), channel.end());
+        sequence.insert(sequence.end(), channel.Begin(), channel.End());
       }
       return sequence;
     }
