@@ -96,4 +96,7 @@ public:
   Writer(Stream &stream, Color::Tp color) : Color::Writer(stream, color) {}
 
 }; // Writer<Color::Tp>
+
+static constexpr Color::Tp DefColor = Color::RGB;
+
 }; // PSD

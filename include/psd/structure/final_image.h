@@ -1,8 +1,12 @@
 
+#pragma once
+
 #include <psd/core/stream.h>
 #include <psd/core/length_calculator.h>
-#include <psd/core/type/depth.h>
 #include <psd/structure/header.h>
+#include <psd/core/type/depth.h>
+#include <image/channel_array.h>
+#include <image/convertor/channel_array.h>
 #include <psd/core/type/color.h>
 
 #include <psd/core/compressor.h>
@@ -15,221 +19,176 @@
 
 namespace PSD {
 
-template <Depth::Tp DepthV, Color::Tp ColorV>
-class CompressedFinalImage {
-public:
-
-  class LengthCalculator;
-  class Reader;
-  class Writer;
-
-  class Decompressor;
-
-  static constexpr Depth::Tp DepthValue = DepthV;
-  static constexpr Color::Tp ColorValue = ColorV;
-
-  static constexpr bool IsCompressed   = true;
-  static constexpr bool IsDecompressed = false;
-
-  template <Depth::Tp, Color::Tp>
-  friend class FinalImage;
-
-  explicit CompressedFinalImage() = default;
-
-  bool operator==(const CompressedFinalImage &other) const {
-    return data_ == other.data_;
-  }
-  bool operator!=(const CompressedFinalImage &other) const {
-    return !operator==(other);
-  }
-
-private:
-  Compression::Tp compression_;
-  std::vector<std::uint8_t> data_;
-
-}; // CompressedFinalImage
-
-template <Depth::Tp DepthV, Color::Tp ColorV>
+template <Depth::Tp DepthV = DefDepth, 
+          Color::Tp ColorV = DefColor,
+          bool DataState   = Decompressed>
 class FinalImage {
+  static_assert(false);
+};
+
+template <Depth::Tp DepthV = DefDepth, 
+          Color::Tp ColorV = DefColor>
+using CompFinalImage = FinalImage<DepthV, ColorV, Compressed>; 
+
+template <Depth::Tp DepthV, 
+          Color::Tp ColorV>
+class FinalImage<DepthV, ColorV, Compressed> {
 public:
 
-  class LengthCalculator;
-  class Writer;
+  class LengthCalculator {
+  public:
+    explicit LengthCalculator(const FinalImage &input) : input_(input) {}
 
-  class Compressor;
+    std::uint64_t Calculate() {
+      return GetCompressionLength () + 
+             GetDataLength        ();
+    }
+  private:
+    const FinalImage &input_;
 
-  static constexpr Depth::Tp DepthValue = DepthV;
-  static constexpr Color::Tp ColorValue = ColorV;
+    std::uint64_t GetCompressionLength() const {
+      return PSD::LengthCalculator(input_.compression_).Calculate();
+    }
+    std::uint64_t GetDataLength() const {
+      return PSD::LengthCalculator(input_.data_).Calculate();
+    }
+  };
+  class Reader {
+  public:
+    explicit Reader(Stream &stream) : stream_(stream) {}
 
-  static constexpr bool IsCompressed   = false;
-  static constexpr bool IsDecompressed = true;
+    FinalImage Read() {
+      FinalImage output;
+
+      ReadCompression (output);
+      ReadData        (output);
+
+      return output;
+    }
+  private:
+    Stream &stream_;
+
+    void ReadCompression(FinalImage &output) {
+      output.compression_ = stream_.Read<decltype(output.compression_)>();
+    }
+    void ReadData(FinalImage &output) {
+      output.data_ = stream_.Read<decltype(output.data_)>(
+        stream_.GetLength () - 
+        stream_.GetPos    ()
+      );
+    }
+  };
+  class Writer {
+  public:
+    explicit Writer(Stream &stream, const FinalImage &input) : stream_(stream), input_(input) {}
+
+    void Write() {
+      stream_.Write(input_.compression_);
+      stream_.Write(input_.data_);
+    }
+  private:
+    Stream &stream_; const FinalImage &input_;
+  };
+  class Decompressor {
+  public:
+    using Output = FinalImage<DepthV, ColorV>;
+
+    explicit Decompressor(const FinalImage &input) : input_(input) {}
+
+    auto Decompress(const Header &header) {
+      return Create(Image::SequenceConvertor(
+        PSD::Decompressor(input_.data_).Decompress(
+          input_.compression_, 
+          header.row_count,
+          header.column_count
+        )
+      ).template Convert<
+        DepthV, 
+        ColorV, 
+        Image::DisableAlpha,
+        Image::Endianness::Big>
+      (
+        header.row_count,
+        header.column_count,
+        header.depth,
+        header.color
+      ));
+    }
+  private:
+    const FinalImage &input_;
+
+    auto Create(decltype(Output::buffer) buffer) const {
+      Output output;
+      output.buffer = std::move(buffer);
+
+      return output;
+    }
+  };
 
   explicit FinalImage() = default;
 
-  explicit FinalImage(std::uint64_t row_count, std::uint64_t column_count) : buffer(row_count, column_count) {}
+  friend FinalImage<DepthV, ColorV, Decompressed>;
 
-  Image::Buffer<DepthV, ColorV> buffer = Image::Buffer<DepthV, ColorV>();
-
-}; // FinalImage 
-
-template <Depth::Tp DepthV, Color::Tp ColorV>
-class CompressedFinalImage<DepthV, ColorV>::LengthCalculator {
-public:
-
-  explicit LengthCalculator(const CompressedFinalImage<DepthV, ColorV> &input) : input_(input) {}
-
-  std::uint64_t Calculate() const { 
-    return PSD::LengthCalculator(input_.compression_).Calculate() + input_.data_.size(); 
+  bool operator==(const FinalImage &other) const {
+    return data_ == other.data_;
   }
-
-private:
-  const CompressedFinalImage<DepthV, ColorV> &input_;
-
-}; // CompressedFinalImage<DepthV, ColorV>::LengthCalculator
-
-PSD_REGISTER_LENGTH_CALCULATOR_FOR_BUFFER(CompressedFinalImage);
-
-template <Depth::Tp DepthV, Color::Tp ColorV>
-class CompressedFinalImage<DepthV, ColorV>::Reader {
-public:
-
-  explicit Reader(Stream &stream) : stream_(stream) {}
-
-  CompressedFinalImage<DepthV, ColorV> Read() {
-    CompressedFinalImage<DepthV, ColorV> output;
-
-    output.compression_ = stream_.Read<Compression::Tp>();
-    output.data_        = stream_.Read<std::uint8_t>(
-      stream_.GetLength() - stream_.GetPos()
-    );
-    return output;
+  bool operator!=(const FinalImage &other) const {
+    return !operator==(other);
   }
-
 private:
-  Stream &stream_;
+  Compression::Tp compression_; std::vector<std::uint8_t> data_;
+};
 
-}; // CompressedFinalImage<DepthV, ColorV>::Reader
+PSD_REGISTER_LENGTH_CALCULATOR_FOR_BUFFER (CompFinalImage);
+PSD_REGISTER_READER_FOR_BUFFER            (CompFinalImage);
+PSD_REGISTER_WRITER_FOR_BUFFER            (CompFinalImage);
 
-PSD_REGISTER_READER_FOR_BUFFER(CompressedFinalImage);
-
-template <Depth::Tp DepthV, Color::Tp ColorV>
-class CompressedFinalImage<DepthV, ColorV>::Writer {
+template <Depth::Tp DepthV, 
+          Color::Tp ColorV>
+class FinalImage<DepthV, ColorV, Decompressed> {
 public:
 
-  explicit Writer(Stream &stream, const CompressedFinalImage<DepthV, ColorV> &input) : stream_(stream), input_(input) {}
+  class Compressor {
+  public:
+    using Output = FinalImage<DepthV, ColorV, Compressed>;
 
-  void Write() {
-    stream_.Write(input_.compression_);
-    stream_.Write(input_.data_);
-  }
+    explicit Compressor(const FinalImage &input) : input_(input) {}
 
-private:
-  Stream &stream_;
-  const CompressedFinalImage<DepthV, ColorV> &input_;
-
-}; // CompressedFinalImage<DepthV, ColorV>::Writer
-
-PSD_REGISTER_WRITER_FOR_BUFFER(CompressedFinalImage);
-
-template <Depth::Tp DepthV, Color::Tp ColorV>
-class CompressedFinalImage<DepthV, ColorV>::Decompressor {
-public:
-
-  explicit Decompressor(const CompressedFinalImage<DepthV, ColorV> &input) : input_(input) {}
-
-  FinalImage<DepthV, ColorV> Decompress(const Header &header) const {
-    FinalImage<DepthV, ColorV> output(header.row_count, header.column_count);
-
-    std::vector<std::uint8_t> decompressed = PSD::Decompressor(input_.data_).Decompress(
-      input_.compression_, 
-      header.row_count * header.channel_count, 
-      header.column_count
-    );
-
-    auto iterator = decompressed.cbegin();
-
-    #define CONVERT(InputDepthV, InputColorV)                                                                                    \
-      (header.depth == InputDepthV && header.color == InputColorV) {                                                             \
-        std::array<Image::Buffer<InputDepthV, Color::Grayscale>, Color::ChannelCount<InputColorV>> channel_list;                 \
-        for (auto index = 0u;                                                                                                    \
-                  index < Color::ChannelCount<InputColorV>;                                                                      \
-                  index++) {                                                                                                     \
-          channel_list[index] = Image::SequenceConvertor(                                                                        \
-            iterator  - header.row_count * header.column_count * Image::Element<InputDepthV, Color::Grayscale>::BCount,          \
-            iterator += header.row_count * header.column_count * Image::Element<InputDepthV, Color::Grayscale>::BCount           \
-          ).template ToBuffer<InputDepthV, Color::Grayscale>(header.row_count, header.column_count);                             \
-        }                                                                                                                        \
-        output.buffer = Image::DepthConvertor(Image::ColorConvertor(Image::Buffer<InputDepthV, InputColorV>::From(channel_list)) \
-          .template Convert<ColorV>())                                                                                           \
-          .template Convert<DepthV>();                                                                                           \
-      } 
-
-    if CONVERT(Depth::Eight,     Color::RGB)       else 
-    if CONVERT(Depth::Sixteen,   Color::RGB)       else 
-    if CONVERT(Depth::ThirtyTwo, Color::RGB)       else 
-    if CONVERT(Depth::Eight,     Color::CMYK)      else 
-    if CONVERT(Depth::Sixteen,   Color::CMYK)      else 
-    if CONVERT(Depth::ThirtyTwo, Color::CMYK)      else 
-    if CONVERT(Depth::Eight,     Color::Grayscale) else 
-    if CONVERT(Depth::Sixteen,   Color::Grayscale) else 
-    if CONVERT(Depth::ThirtyTwo, Color::Grayscale) else
-    throw std::runtime_error("Failure");
-
-    #undef CONVERT
-
-    return output;
-  }
-
-private:
-  const CompressedFinalImage<DepthV, ColorV> &input_;
-
-}; // CompressedFinalImage<DepthV, ColorV>::Decompressor
-
-PSD_REGISTER_DECOMPRESSOR_FOR_BUFFER(CompressedFinalImage);
-
-template <Depth::Tp DepthV, Color::Tp ColorV> 
-class FinalImage<DepthV, ColorV>::Compressor {
-public:
-  explicit Compressor(const FinalImage<DepthV, ColorV> &input) : input_(input) {}
-
-  CompressedFinalImage<DepthV, ColorV> Compress(Compression::Tp compression) const {
-    CompressedFinalImage<DepthV, ColorV> output;
-    output.compression_ = compression;
-
-    std::array<Image::Buffer<DepthV, Color::Grayscale>, Color::ChannelCount<ColorV>> channel_list;
-
-    for (auto &buffer : channel_list) {
-      buffer = Image::Buffer<DepthV, Color::Grayscale>(input_.buffer.GetRCount(), input_.buffer.GetCCount());
+    auto Compress(Compression::Tp compression) {
+      return Create(
+        compression,
+        PSD::Compressor(Convert()).Compress(compression)
+      );
     }
-    for (auto index = 0u; 
-              index < input_.buffer.GetLength();
-              index++) {
-      for (auto channel_index = 0u;
-                channel_index < Color::ChannelCount<ColorV>;
-                channel_index++) {
-        channel_list[channel_index][index] = input_.buffer[index][channel_index];
+  private:
+    const FinalImage &input_;
+
+    auto Create(
+      decltype(Output::compression_) compression,
+      decltype(Output::data_)        data
+    ) {
+      Output output;
+
+      output.compression_ = std::move(compression);
+      output.data_        = std::move(data);
+
+      return output;
+    }
+    auto Convert() {
+      Image::Sequence sequence;
+
+      for (decltype(auto) channel : Image::ChannelArrayConvertor(input_.buffer).Convert()) {
+        sequence.insert(sequence.end(), channel.begin(), channel.end());
       }
+      return sequence;
     }
-    for (auto buffer : channel_list) {
-      auto data = Image::SequenceConvertor(buffer).ToSequence();
-      output.data_.insert(
-        output.data_.end(), 
-        data.begin(),
-        data.end());
-    }
-    output.data_ = PSD::Compressor(output.data_).Compress(
-      compression,
-      input_.buffer.GetRCount() * Color::ChannelCount<ColorV>,
-      input_.buffer.GetCCount()
-    );
-    return output;
-  }
+  };
+  using UsedBuffer = Image::Buffer<DepthV, ColorV>;
 
-private:
-  const FinalImage<DepthV, ColorV> &input_;
+  explicit FinalImage() = default;
+  explicit FinalImage(UsedBuffer buffer) : buffer(std::move(buffer)) {}
 
-}; // FinalImage<DepthV, ColorV>::Compressor
-
+  UsedBuffer buffer;
+};
 PSD_REGISTER_COMPRESSOR_FOR_BUFFER(FinalImage);
-
-}; // PSD
+}

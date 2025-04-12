@@ -95,4 +95,9 @@ private:
 
 PSD_REGISTER_WRITER_FOR_TYPE(Compression::Tp, Compression);
 
+static constexpr bool Compressed   = true;
+static constexpr bool Decompressed = false;
+
+static constexpr Compression::Tp DefCompression = Compression::RLE;
+
 }; // PSD

@@ -15,8 +15,8 @@ public:
 
   auto Process() const {
     struct {
-      Image::Buffer <DepthV, ColorV> buffer;
-      Image::Alpha  <DepthV>         alpha;
+      Image::Buffer        <DepthV, ColorV> buffer;
+      Image::AlphaChannel  <DepthV>         alpha;
     } output;
 
     output.buffer = input_.GetBuffer ();

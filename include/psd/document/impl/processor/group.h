@@ -15,8 +15,8 @@ public:
   explicit Processor(const Group<DepthV, ColorV> &input) : input_(input) {}
 
   struct Output {
-    Image::Buffer <DepthV, ColorV> buffer;
-    Image::Alpha  <DepthV>         alpha;
+    Image::Buffer        <DepthV, ColorV> buffer;
+    Image::AlphaChannel  <DepthV>         alpha;
   };
   auto Process() {
     Output output;

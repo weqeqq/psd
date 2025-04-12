@@ -74,7 +74,7 @@ public:
 
   using LayerTp   = Layer<DepthV, ColorV>;
   using ElementTp = PSD::LayerInfoElement<DepthV, ColorV>;
-  using ChannelTp = Image::Alpha<DepthV>;
+  using ChannelTp = Image::AlphaChannel<DepthV>;
 
   explicit LayerConvertor(const ElementTp &input) : input_(input) {}
 

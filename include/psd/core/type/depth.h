@@ -45,16 +45,12 @@ public:
 
 private:
   Stream &stream_;
-
-}; // Depth::Reader
-
+};
 template <>
 class Reader<Depth::Tp> : public Depth::Reader {
 public:
   Reader(Stream &stream) : Depth::Reader(stream) {}
-
-}; // Reader<Depth::Tp>
-
+};
 class Depth::Writer {
 public:
 
@@ -72,17 +68,15 @@ public:
     }
     stream_.Write(value);
   }
-
 private:
   Stream   &stream_;
   Depth::Tp depth_;
-
-}; // Depth::Writer 
-
+}; 
 template <>
 class Writer<Depth::Tp> : public Depth::Writer {
 public:
   Writer(Stream &stream, Depth::Tp depth) : Depth::Writer(stream, depth) {}
+}; 
+static constexpr Depth::Tp DefDepth = Depth::Eight;
 
-}; // Writer<Depth::Tp>
-}; // PSD
+};

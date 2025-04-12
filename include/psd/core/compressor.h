@@ -36,6 +36,7 @@ private:
 }; // Compressor<std::vector<std::uint8_t>>
 
 #define PSD_REGISTER_COMPRESSOR_FOR_TYPE(TypeName, ClassName)           \
+  template <>                                                           \
   class Compressor<TypeName> : public ClassName::Compressor {           \
   public:                                                               \
     Compressor(const TypeName &input) : ClassName::Compressor(input) {} \

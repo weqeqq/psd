@@ -1,17 +1,50 @@
 
 #pragma once
 
+#include <vector>
+#include <array>
+#include <cstdint>
+
 namespace PSD {
 
-template <typename Te>
+template <typename ValueT>
 class LengthCalculator {
 public:
+  explicit LengthCalculator(const ValueT &input) : input_(input) {}
 
-  static_assert(false);
+  std::uint64_t Calculate() { 
+    return sizeof input_; 
+  }
+private:
+  const ValueT &input_;
+}; 
+template <typename ValueT>
+class LengthCalculator<std::vector<ValueT>> {
+public:
+  using UsedVector = std::vector<ValueT>;
 
-  LengthCalculator(Te) {}
+  explicit LengthCalculator(const UsedVector &input) : input_(input) {}
 
-}; // LengthCalculator
+  std::uint64_t Calculate() {
+    return input_.size();
+  }
+private:
+  const UsedVector &input_;
+};
+
+template <typename ValueT, std::uint64_t Length>
+class LengthCalculator<std::array<ValueT, Length>> {
+public:
+  using UsedArray = std::array<ValueT, Length>;
+
+  explicit LengthCalculator(const UsedArray &input) : input_(input) {}
+
+  constexpr std::uint64_t Calculate() {
+    return Length;
+  }
+private:
+  const UsedArray &input_;
+};
 
 #define PSD_REGISTER_LENGTH_CALCULATOR_FOR_TYPE(TypeName, ClassName)                \
   template <>                                                                       \
@@ -30,5 +63,5 @@ public:
     explicit LengthCalculator(const ClassName<DepthV, ColorV> &input) : ClassName<DepthV, ColorV>::LengthCalculator(input) {} \
   }
 
-}; // PSD
+};
 
