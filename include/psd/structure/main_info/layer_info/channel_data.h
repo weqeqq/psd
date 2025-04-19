@@ -418,3 +418,4 @@ public:
 private:
   const UsedCompChannelData &input_;
 };
+};
