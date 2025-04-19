@@ -3,6 +3,7 @@
 
 #include <psd/core/stream.h>
 #include <psd/core/length_calculator.h>
+#include <image/convertor/data.h>
 #include <psd/structure/header.h>
 #include <psd/core/type/depth.h>
 #include <image/channel_array.h>
@@ -34,6 +35,12 @@ template <Depth::Tp DepthV,
           Color::Tp ColorV>
 class FinalImage<DepthV, ColorV, Compressed> {
 public:
+
+  static constexpr Depth::Tp DepthValue = DepthV;
+  static constexpr Color::Tp ColorValue = ColorV;
+
+  static constexpr bool IsCompressed   = true;
+  static constexpr bool IsDecompressed = false;
 
   class LengthCalculator {
   public:
@@ -96,33 +103,100 @@ public:
     explicit Decompressor(const FinalImage &input) : input_(input) {}
 
     auto Decompress(const Header &header) {
-      return Create(Image::SequenceConvertor(
-        PSD::Decompressor(input_.data_).Decompress(
-          input_.compression_, 
-          header.row_count,
-          header.column_count
-        )
-      ).template Convert<
-        DepthV, 
-        ColorV, 
-        Image::DisableAlpha,
-        Image::Endianness::Big>
-      (
-        header.row_count,
-        header.column_count,
-        header.depth,
-        header.color
-      ));
+      auto data = DecompressData(header);
+
+      #define IF_CONVERT(InputDepthV, InputColorV)       \
+        if (Compare<InputDepthV, InputColorV>(header)) { \
+          return Process<InputDepthV, InputColorV>(      \
+            header,                                      \
+            data                                         \
+          );                                             \
+        }                                                
+      IF_CONVERT(Depth::Eight, Color::RGB)       else 
+      IF_CONVERT(Depth::Eight, Color::CMYK)      else 
+      IF_CONVERT(Depth::Eight, Color::Grayscale) else throw std::runtime_error("final image cvt fail");
+
+      #undef IF_CONVERT
     }
   private:
     const FinalImage &input_;
 
+    auto DecompressData(const Header &header) const {
+      return PSD::Decompressor(input_.data_).Decompress(
+        input_.compression_,
+        header.row_count * header.channel_count,
+        header.column_count
+      ); 
+    }
+    template <Depth::Tp InputDepthV, 
+              Color::Tp InputColorV>
+    bool Compare(const Header &header) const {
+      return header.depth == InputDepthV &&
+             header.color == InputColorV;
+    }
+
+    template <Depth::Tp InputDepthV>
+    auto GetChannelFrom(
+      const Header &header,
+      Image::Sequence::const_iterator iterator,
+      Image::Sequence::const_iterator end) const {
+
+      return Image::SequenceConvertor(
+        iterator, 
+        end
+      ).template Convert<InputDepthV, Color::Grayscale, Image::DisableAlpha, Image::Endianness::Big>(
+        header.row_count,
+        header.column_count
+      );
+    }
+    template <Depth::Tp InputDepthV,
+              Color::Tp InputColorV>
+    auto ToChannels(const Header &header, const Image::Sequence &data) const {
+      Image::ChannelArray<
+        InputDepthV,
+        InputColorV> channels(header.row_count, header.column_count);
+
+      auto iterator = data.cbegin();
+      for (auto index = 0u;
+                index < channels.ChannelCount;
+                index++) {
+        channels[index] = GetChannelFrom<InputDepthV>(
+          header,
+          iterator  - channels[index].GetByteCount(),
+          iterator += channels[index].GetByteCount()
+        );
+      }
+      return channels;
+    }
+    template <Depth::Tp InputDepthV,
+              Color::Tp InputColorV>
+    auto ToBuffer(const Header &header, const Image::Sequence &data) const {
+      return Image::ChannelArrayConvertor(
+        ToChannels<InputDepthV, InputColorV>(
+          header, 
+          data
+        )
+      ).Convert();
+    }
     auto Create(decltype(Output::buffer) buffer) const {
       Output output;
       output.buffer = std::move(buffer);
 
       return output;
     }
+    template <Depth::Tp InputDepthV, 
+              Color::Tp InputColorV>
+    auto Process(const Header &header, const Image::Sequence &data) {
+      return Create(
+        Image::DataConvertor(
+          ToBuffer<InputDepthV, InputColorV>(
+            header, 
+            data
+          )
+        ).template Convert<DepthV, ColorV>()
+      );
+    }
+
   };
 
   explicit FinalImage() = default;
@@ -148,6 +222,12 @@ template <Depth::Tp DepthV,
           Color::Tp ColorV>
 class FinalImage<DepthV, ColorV, Decompressed> {
 public:
+
+  static constexpr Depth::Tp DepthValue = DepthV;
+  static constexpr Color::Tp ColorValue = ColorV;
+
+  static constexpr bool IsCompressed   = false;
+  static constexpr bool IsDecompressed = true;
 
   class Compressor {
   public:
