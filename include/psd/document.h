@@ -3,7 +3,7 @@
 
 #include <psd/document/impl/convertor/root.h>
 #include <psd/document/impl/processor/group.h>
-#include <image/encoder.h>
+#include <image/encode.h>
 #include <psd/structure.h>
 
 namespace PSD {
@@ -167,8 +167,7 @@ public:
     output.Encode();
   }
   void Export(const std::string &path) const {
-    auto [buffer, alpha] = DocumentImpl::Processor(root_).Process();
-    Image::Encoder(buffer, alpha).Write(path);
+    Image::Encode(DocumentImpl::Processor(root_).Process(), path);
   }
 
 private:
@@ -177,25 +176,35 @@ private:
     explicit Input(const std::string &path) : path_(path) {}
 
     void Decode() {
-      structure_ = Decompressor(
-        Stream(path_).Read<CompressedStructure<DepthV, ColorV>>()
+      Stream stream(path_);
+      header_        = stream.Read<Header>();
+      color_info_    = stream.Read<ColorInfo>();
+      resource_info_ = stream.Read<ResourceInfo>();
+      main_info_     = PSD::Decompressor(
+        stream.Read<CompMainInfo<
+          DepthV, 
+          ColorV>>()
       ).Decompress();
     }
     auto Convert() const {
       return DocumentImpl::RootConvertor(
-        structure_.main_info.layer_info
+        main_info_.layer_info
       ).Convert();
     }
     auto GetRCount() const {
-      return structure_.header.row_count;
+      return header_.row_count;
     }
     auto GetCCount() const {
-      return structure_.header.column_count;
+      return header_.column_count;
     }
 
   private:
     const std::string &path_;
-    Structure<DepthV, ColorV> structure_;
+
+    Header                   header_;
+    ColorInfo                color_info_;
+    ResourceInfo             resource_info_;
+    MainInfo<DepthV, ColorV> main_info_;
 
   };
   class Output {
@@ -205,28 +214,50 @@ private:
     void Encode() {
       Stream stream;
 
-      structure_.header.version       = Version::PSD;
-      structure_.header.channel_count = Color::ChannelCount<ColorV>;
-      structure_.header.depth         = DepthV;
-      structure_.header.color         = ColorV;
+      header_.version       = Version::PSD;
+      header_.channel_count = Color::ChannelCount<ColorV, Image::DisableAlpha>;
+      header_.depth         = DepthV;
+      header_.color         = ColorV;
 
-      stream.Write(Compressor(structure_).Compress());
+      stream.Write(header_);
+      stream.Write(color_info_);
+      stream.Write(resource_info_);
+      stream.Write(PSD::Compressor(main_info_).Compress(Compression::RLE));
+      stream.Write(PSD::Compressor(final_image_).Compress(Compression::RLE));
+
       stream.To(path_);
     }
     void Convert(const DocumentImpl::Root<DepthV, ColorV> &root) {
-      structure_.main_info.layer_info = DocumentImpl::RootConvertor(root).Convert();
-      structure_.final_image.buffer   = DocumentImpl::Processor(root).Process().buffer;
+      main_info_.layer_info = DocumentImpl::RootConvertor(root).Convert();
+      auto alpha_buffer = DocumentImpl::Processor(root).Process();
+
+      final_image_.buffer   = Image::Buffer<DepthV, ColorV>(alpha_buffer.GetRowCount(), alpha_buffer.GetColumnCount()); 
+
+      for (auto index = 0u;
+                index < final_image_.buffer.GetLength();
+                index++) {
+        for (auto channel = 0u;
+                  channel < final_image_.buffer.ChannelCount;
+                  channel++) {
+          final_image_.buffer[index][channel] = alpha_buffer[index][channel];
+        }
+      }
     }
     void SetRCount(std::uint64_t row_count) {
-      structure_.header.row_count = row_count;
+      header_.row_count = row_count;
     }
     void SetCCount(std::uint64_t column_count) {
-      structure_.header.column_count = column_count;
+      header_.column_count = column_count;
     }
 
   private:
     const std::string &path_;
-    Structure<DepthV, ColorV> structure_;
+
+    Header                     header_;
+    ColorInfo                  color_info_;
+    ResourceInfo               resource_info_;
+    MainInfo<DepthV, ColorV>   main_info_;
+    FinalImage<DepthV, ColorV> final_image_;
   };
 
   DocumentImpl::Root<DepthV, ColorV> root_;

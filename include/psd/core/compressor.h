@@ -21,9 +21,12 @@ public:
   std::vector<std::uint8_t> Compress(
     Compression::Tp compression, std::uint64_t row_count, std::uint64_t column_count
   ) {
+    if (!input_.size()) {
+      return input_;
+    }
     switch (compression) {
-      case Compression::None: return input_;
-      case Compression::RLE: return CompressRLE(row_count, column_count);
+      case Compression::None : return input_;
+      case Compression::RLE  : return CompressRLE(row_count, column_count);
       default: throw std::runtime_error("unsupported");
     }
   }

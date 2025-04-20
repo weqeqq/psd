@@ -14,64 +14,50 @@ public:
 
   explicit Processor(const Group<DepthV, ColorV> &input) : input_(input) {}
 
-  struct Output {
-    Image::Buffer        <DepthV, ColorV> buffer;
-    Image::AlphaChannel  <DepthV>         alpha;
-  };
-  auto Process() {
-    Output output;
 
+  using UsedBuffer = Image::AlphaBuffer<DepthV, ColorV>;
+
+  auto Process() {
     auto row_count    = input_.FindRCount();
     auto column_count = input_.FindCCount();
 
-    output.buffer = decltype(output.buffer) (row_count, column_count);
-    output.alpha  = decltype(output.alpha)  (row_count, column_count);
+    UsedBuffer buffer(row_count, column_count);
 
     for (auto element : input_) {
       if (element->IsLayer()) {
-        ProcessLayer(output, LayerCast<DepthV, ColorV>(element));
+        ProcessLayer(buffer, LayerCast<DepthV, ColorV>(element));
         continue;
       }
       if (element->IsGroup()) {
-        ProcessGroup(output, GroupCast<DepthV, ColorV>(element));
+        ProcessGroup(buffer, GroupCast<DepthV, ColorV>(element));
         continue;
       }
       throw GroupError::UndefinedElement();
     }
-    return output;
+    return buffer;
   }
 
 private:
   const Group<DepthV, ColorV> &input_;
 
-  void ProcessLayer(Output &output, const Layer<DepthV, ColorV> &layer) {
-    auto [input_buffer, input_alpha] = PSD::DocumentImpl::Processor(layer).Process();
-    auto [output_buffer, output_alpha] = Image::Blend(
-      output.buffer,
-      output.alpha,
-      input_buffer,
-      input_alpha,
+  void ProcessLayer(UsedBuffer &output, const Layer<DepthV, ColorV> &layer) {
+    Image::Blend(
+      output,
+      PSD::DocumentImpl::Processor(layer).Process(),
       layer.GetLeft() - input_.GetLeft(),
       layer.GetTop()  - input_.GetTop(),
       layer.GetBlending()
     );
-    output.buffer = std::move(output_buffer);
-    output.alpha  = std::move(output_alpha);
   }
-  void ProcessGroup(Output &output, const Group<DepthV, ColorV> &group) {
-    auto [input_buffer, input_alpha] = Processor(group).Process();
-    auto [output_buffer, output_alpha] = Image::Blend(
-      output.buffer,
-      output.alpha,
-      input_buffer,
-      input_alpha,
+  void ProcessGroup(UsedBuffer &output, const Group<DepthV, ColorV> &group) {
+    Image::Blend(
+      output,
+      Processor(group).Process(),
       group.GetLeft() - input_.GetLeft(),
       group.GetTop()  - input_.GetTop(),
       // group.GetBlending()
       Blending::Normal
     );
-    output.buffer = std::move(output_buffer);
-    output.alpha  = std::move(output_alpha);
   }
 
 };

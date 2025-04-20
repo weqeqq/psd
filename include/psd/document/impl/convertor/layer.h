@@ -21,16 +21,18 @@ class LayerConvertor<Layer<DepthV, ColorV>> {
 public:
   explicit LayerConvertor(const Layer<DepthV, ColorV> &input) : input_(input) {}
 
-  using OutputTp = PSD::LayerInfoElement<DepthV, ColorV>;
+  // using OutputTp = PSD::LayerInfoElement<DepthV, ColorV>;
 
   constexpr bool CanBeConverted() const {
     return true;
   }
-  OutputTp Convert() const {
-    return OutputTp {
-      CreateLayerData   (),
-      CreateChannelData ()
-    };
+  auto Convert() const {
+    LayerInfoElement<DepthV, ColorV> output;
+
+    output.layer_data   = CreateLayerData();
+    output.channel_data = CreateChannelData();
+
+    return output;
   }
 
 private:
@@ -49,7 +51,7 @@ private:
     ChannelData<DepthV, ColorV> output;
 
     output.buffer = input_.GetBuffer();
-    output.alpha  = input_.GetAlpha();
+    // output.alpha  = input_.GetAlpha();
 
     return output;
   }
@@ -72,22 +74,20 @@ template <Depth::Tp DepthV, Color::Tp ColorV>
 class LayerConvertor<PSD::LayerInfoElement<DepthV, ColorV>> {
 public:
 
-  using LayerTp   = Layer<DepthV, ColorV>;
-  using ElementTp = PSD::LayerInfoElement<DepthV, ColorV>;
-  using ChannelTp = Image::AlphaChannel<DepthV>;
+  using UsedLayer = Layer<DepthV, ColorV>;
+  using UsedLayerElement = PSD::LayerInfoElement<DepthV, ColorV>;
 
-  explicit LayerConvertor(const ElementTp &input) : input_(input) {}
+  explicit LayerConvertor(const UsedLayerElement &input) : input_(input) {}
 
   bool CanBeConverted() const {
     auto section_divider = input_.layer_data.extra_info.template Get<SectionDivider>();
     return section_divider.type == DividerType::Layer;
   }
 
-  LayerTp Convert() const {
-    LayerTp output(GetName());
+  UsedLayer Convert() const {
+    UsedLayer output(GetName());
 
     output.SetImage(input_.channel_data.buffer);
-    output.SetAlpha(GetAlpha());
     output.SetBlending(input_.layer_data.blending);
     output.SetOffset(
       input_.layer_data.rectangle.left, 
@@ -97,20 +97,11 @@ public:
   }
 
 private:
-  const ElementTp &input_;
+  const UsedLayerElement &input_;
 
   std::string GetName() const {
     return input_.layer_data.name; // TODO
   }
-  ChannelTp GetAlpha() const {
-    return input_.channel_data.alpha.GetLength()
-      ? input_.channel_data.alpha
-      : ChannelTp(
-      input_.channel_data.buffer.GetRCount(),
-      input_.channel_data.buffer.GetCCount()
-    );
-  }
-
 };
 
 };

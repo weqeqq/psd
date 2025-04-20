@@ -14,15 +14,7 @@ public:
   explicit Processor(const Layer<DepthV, ColorV> &input) : input_(input) {}
 
   auto Process() const {
-    struct {
-      Image::Buffer        <DepthV, ColorV> buffer;
-      Image::AlphaChannel  <DepthV>         alpha;
-    } output;
-
-    output.buffer = input_.GetBuffer ();
-    output.alpha  = input_.GetAlpha  ();
-
-    return output;
+    return input_.GetBuffer();
   }
   auto Process(std::uint64_t row_count, std::uint64_t column_count) const {
     // TODO

@@ -56,8 +56,7 @@ private:
   const Group<DepthV, ColorV> &input_;
 
   void AssignStart(LayerData &layer_data) const {
-    layer_data.channel_count = Color::ChannelCount<ColorV>;
-    layer_data.channel_count++; 
+    layer_data.channel_count = Color::ChannelCount<ColorV, Image::EnableAlpha>;
 
     layer_data.blending = Blending::Normal;
     layer_data.opacity  = 0xff;
@@ -76,13 +75,12 @@ private:
 
     AssignStart(output.layer_data);
 
-    output.channel_data.buffer = Image::Buffer<DepthV, ColorV>();
-    output.channel_data.alpha  = Image::Buffer<DepthV, Color::Grayscale>();
+    output.channel_data.buffer = Image::AlphaBuffer<DepthV, ColorV>();
+    // output.channel_data.alpha  = Image::Buffer<DepthV, Color::Grayscale>();
     return output;
   }
   void AssignEnd(LayerData &layer_data) const {
-    layer_data.channel_count = Color::ChannelCount<ColorV>;
-    layer_data.channel_count++;
+    layer_data.channel_count = Color::ChannelCount<ColorV, Image::EnableAlpha>;
 
     layer_data.blending = input_.GetBlending();
     layer_data.opacity  = input_.GetOpacity();
@@ -101,8 +99,8 @@ private:
 
     AssignEnd(output.layer_data);
 
-    output.channel_data.buffer = Image::Buffer<DepthV, ColorV>();
-    output.channel_data.alpha  = Image::Buffer<DepthV, Color::Grayscale>();
+    output.channel_data.buffer = Image::AlphaBuffer<DepthV, ColorV>();
+    // output.channel_data.alpha  = Image::Buffer<DepthV, Color::Grayscale>();
     return output;
   }
 };

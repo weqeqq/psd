@@ -263,7 +263,7 @@ public:
     explicit Writer(Stream &stream, const ChannelData &input) : stream_(stream), input_(input) {}
 
     void Write() {
-      stream_.Write(input_[Color::AlphaIndex<ColorV>]);
+      stream_.Write(input_.data_[Color::AlphaIndex<ColorV>]);
       for (auto index = 0u;
                 index < Color::ChannelCount<ColorV, Image::DisableAlpha>;
                 index++) {
@@ -307,12 +307,23 @@ public:
           Image::DisableAlpha,
           Image::Endianness::Big>(row_count, column_count);
       }
-      return Image::ChannelArrayConvertor(channel_array).Convert();
+      return Create(Image::ChannelArrayConvertor(channel_array).Convert());
     }
   private:
     const ChannelData &input_;
+
+    auto Create(decltype(Output::buffer) buffer) const {
+      Output output;
+      output.buffer = std::move(buffer);
+      
+      return output;
+    }
   };
   friend ChannelData<DepthV, ColorV, Decompressed>;
+
+  template <Depth::Tp,
+            Color::Tp>
+  friend class ChannelInfoCreator;
 
   explicit ChannelData() = default;
 
@@ -407,11 +418,11 @@ public:
   auto Create() {
     ChannelInfo output;
 
-    output[-1] = PSD::LengthCalculator(input_[Color::AlphaIndex<ColorV>]).Calculate();
+    output[-1] = PSD::LengthCalculator(input_.data_[Color::AlphaIndex<ColorV>]).Calculate();
     for (auto index = 0u;
               index < Color::ChannelCount<ColorV, Image::DisableAlpha>;
               index++) {
-      output[index] = PSD::LengthCalculator(input_[index]).Calculate();
+      output[index] = PSD::LengthCalculator(input_.data_[index]).Calculate();
     } 
     return output;
   }

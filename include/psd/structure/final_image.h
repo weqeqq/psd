@@ -240,7 +240,7 @@ public:
         compression,
         PSD::Compressor(Convert()).Compress(
           compression, 
-          input_.buffer.GetRowCount    (), 
+          input_.buffer.GetRowCount    () * input_.buffer.ChannelCount, 
           input_.buffer.GetColumnCount ()
         )
       );
