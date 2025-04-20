@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
   image 
   GIT_REPOSITORY https://github.com/weqeqq/image.git
-  GIT_TAG        eaffbc83ef5db75251a02de1fa532117fe6dfdcd
+  GIT_TAG        1d7f648a5bff5205c5e68658cad797bf0be63e72
 )
 
 FetchContent_MakeAvailable(image)
