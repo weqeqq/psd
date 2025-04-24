@@ -11,12 +11,8 @@ target_sources(psd PUBLIC
   FILES 
 )
 target_sources(psd PRIVATE 
-  sources/compressor/rle.cc
-  # sources/compressor/zip.cc
-  # sources/compressor/zipp.cc
-  sources/decompressor/rle.cc
-  # sources/decompressor/zip.cc
-  # sources/decompressor/zipp.cc
+  source/core/compressor/rle.cc
+  source/core/decompressor/rle.cc
 )
 
 include(FetchContent)
@@ -26,10 +22,19 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/weqeqq/image.git
   GIT_TAG        main
 )
-
-FetchContent_MakeAvailable(image)
-
-target_link_libraries(psd PUBLIC image::image)
+FetchContent_Declare(
+  xsimd
+  GIT_REPOSITORY https://github.com/xtensor-stack/xsimd.git
+  GIT_TAG        13.2.0
+)
+FetchContent_MakeAvailable(
+  image 
+  xsimd
+)
+target_link_libraries(psd PUBLIC 
+  image::image
+  xsimd
+)
 
 set_target_properties(psd PROPERTIES 
   CXX_STANDARD          17
