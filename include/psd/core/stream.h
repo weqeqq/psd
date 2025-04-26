@@ -265,8 +265,17 @@ public:
   std::enable_if_t<IsVector<OTe>, OTe>
   Read(std::uint64_t length) {
     OTe output(length);
-    for (auto &value : output) {
-      value = Read<typename OTe::value_type>();
+    if constexpr (std::is_same_v<typename OTe::value_type, std::uint8_t>) {
+      std::copy(
+        buffer_ .begin() + pos_,
+        buffer_ .begin() + pos_ + length,
+        output  .begin()
+      );
+      AdjustPos(length);
+    } else {
+      for (auto &value : output) {
+        value = Read<typename OTe::value_type>();
+      }
     }
     return output;
   }
@@ -367,8 +376,17 @@ public:
   template <typename ITe>
   std::enable_if_t<IsVector<ITe> || IsMap<ITe> || IsUnorderedMap<ITe>>
   Write(const ITe &input) {
-    for (const auto &value : input) {
-      Write(value);
+    if constexpr (std::is_same_v<ITe, std::vector<std::uint8_t>>) {
+      buffer_.insert(
+        buffer_ .begin (),
+        input   .begin (),
+        input   .end   ()
+      );
+      AdjustPos(input.size());
+    } else {
+      for (const auto &value : input) {
+        Write(value);
+      }
     }
   }
   template <typename VTe> 
