@@ -20,7 +20,7 @@ include(FetchContent)
 FetchContent_Declare(
   image 
   GIT_REPOSITORY https://github.com/weqeqq/image.git
-  GIT_TAG        main
+  GIT_TAG        02bf696589cbb14cf08e877734d17da1eef98cfa
 )
 FetchContent_Declare(
   xsimd
