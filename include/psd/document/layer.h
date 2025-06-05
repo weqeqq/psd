@@ -40,12 +40,6 @@ public:
       Image::Decode<DepthV, ColorV>(path)
     );
   }
-  Layer &SetImage(const std::string &path) {
-    return SetImage(path);
-  }
-  Layer &SetImage(const char *path) {
-    return SetImage(path);
-  }
 
   Layer &SetOffset(std::uint64_t x_offset, std::uint64_t y_offset) {
     rectangle_.top    = y_offset;
