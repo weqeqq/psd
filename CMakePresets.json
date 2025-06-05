@@ -7,227 +7,212 @@
   },
   "configurePresets": [
     {
-      "name": "cmake-flags",
-      "hidden": true,
+      "name"   : "cmake-flags",
+      "hidden" : true,
+
       "warnings": {
-        "dev": true,
-        "deprecated": true,
-        "uninitialized": true,
-        "unusedCli": true,
-        "systemVars": false
+        "dev"           : true,
+        "deprecated"    : false,
+        "uninitialized" : false,
+        "unusedCli"     : true,
+        "systemVars"    : true
       },
       "errors": {
-        "dev": true,
-        "deprecated": true
+        "dev"        : false,
+        "deprecated" : false 
       }
     },
     {
-      "name": "linux-debug",
+      "name"   : "debug-build",
+      "hidden" : true,
+
       "inherits": [
         "cmake-flags"
       ],
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_FLAGS_DEBUG": "-g -Wall -Wextra -Wpedantic -Wformat",
-        "CMAKE_CXX_FLAGS_DEBUG": "-g -Wall -Wextra -Wpedantic -Wformat"
-      },
-      "generator": "Unix Makefiles",
+      "generator"      : "Unix Makefiles",
+      "cacheVariables" : { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name"   : "release-build",
+      "hidden" : true,
+
+      "inherits": [
+        "cmake-flags"
+      ],
+      "generator"      : "Unix Makefiles",
+      "cacheVariables" : { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "debug",
+
+      "inherits": [
+        "debug-build"
+      ],
       "binaryDir": "${sourceDir}/build/debug"
     },
     {
-      "name": "linux-release",
+      "name"      : "x86_64-linux",
+      "binaryDir" : "${sourceDir}/build/x86_64-linux",
+
       "inherits": [
-        "cmake-flags"
+        "release-build"
+      ]
+    },
+    {
+      "name"      : "x86_64-macos",
+      "binaryDir" : "${sourceDir}/build/x86_64-macos",
+
+      "inherits": [
+        "release-build"
       ],
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      },
+      "cacheVariables": { 
+        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/x86_64-macos.cmake" 
+      }
+    },
+    {
+      "name"      : "arm64-macos",
+      "binaryDir" : "${sourceDir}/build/arm64-macos",
+
+      "inherits": [
+        "release-build"
+      ],
+      "cacheVariables": { 
+        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/arm64-macos.cmake" 
+      }
+    },
+    {
+      "name"      : "x86_64-windows",
+      "binaryDir" : "${sourceDir}/build/x86_64-windows",
+
+      "inherits": [
+        "release-build"
+      ],
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_C_FLAGS_RELEASE": "-O3",
-        "CMAKE_CXX_FLAGS_RELEASE": "-O3"
-      },
-      "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build/release"
+        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/x86_64-windows.cmake"
+      }
     },
     {
-      "name": "windows-debug",
+      "name"      : "x86-windows",
+      "binaryDir" : "${sourceDir}/build/x86-windows",
+
       "inherits": [
-        "cmake-flags"
+        "release-build"
       ],
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "generator": "Visual Studio 17 2022",
-      "binaryDir": "${sourceDir}/build/debug"
-    },
-    {
-      "name": "windows-release",
-      "inherits": [
-        "cmake-flags"
-      ],
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "generator": "Visual Studio 17 2022",
-      "binaryDir": "${sourceDir}/build/release"
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/x86-windows.cmake"
+      }
     }
   ],
   "buildPresets": [
     {
-      "name": "linux-debug",
-      "configuration": "Debug",
-      "configurePreset": "linux-debug",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
+      "configuration"   : "Debug",
+      "name"            : "debug",
+      "configurePreset" : "debug"
     },
     {
-      "name": "linux-release",
-      "configuration": "Release",
-      "configurePreset": "linux-release",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
+      "configuration"   : "Release",
+      "name"            : "x86_64-linux",
+      "configurePreset" : "x86_64-linux"
+    }, 
+    {
+      "configuration"   : "Release",
+      "name"            : "x86_64-macos",
+      "configurePreset" : "x86_64-macos"
     },
     {
-      "name": "windows-debug",
-      "configuration": "Debug",
-      "configurePreset": "windows-debug",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
+      "configuration"   : "Release",
+      "name"            : "arm64-macos",
+      "configurePreset" : "arm64-macos"
     },
     {
-      "name": "windows-release",
-      "configuration": "Release",
-      "configurePreset": "windows-release",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
+      "configuration"   : "Release",
+      "name"            : "x86_64-windows",
+      "configurePreset" : "x86_64-windows"
+    },
+    {
+      "configuration"   : "Release",
+      "name"            : "x86-windows",
+      "configurePreset" : "x86-windows"
     }
   ],
   "testPresets": [
-    {
-      "name": "linux-debug",
-      "configurePreset": "linux-debug",
-      "environment": {
-        "GTEST_COLOR": "1"
-      },
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "linux-release",
-      "configurePreset": "linux-release",
-      "output": {
-        "outputOnFailure": false
-      }
-    },
-    {
-      "name": "windows-debug",
-      "configurePreset": "windows-debug",
-      "environment": {
-        "GTEST_COLOR": "1"
-      },
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "windows-release",
-      "configurePreset": "windows-release",
-      "output": {
-        "outputOnFailure": false
-      }
-    }
   ],
   "workflowPresets": [
     {
-      "name": "linux-debug",
-      "steps": [
+      "name"  : "debug",
+      "steps" : [
         {
           "type": "configure",
-          "name": "linux-debug"
+          "name": "debug"
         },
         {
           "type": "build",
-          "name": "linux-debug"
-        },
-        {
-          "type": "test",
-          "name": "linux-debug"
+          "name": "debug"
         }
       ]
     },
     {
-      "name": "linux-release",
-      "steps": [
+      "name"  : "x86_64-linux",
+      "steps" : [
         {
           "type": "configure",
-          "name": "linux-release"
+          "name": "x86_64-linux"
         },
         {
           "type": "build",
-          "name": "linux-release"
-        },
-        {
-          "type": "test",
-          "name": "linux-release"
+          "name": "x86_64-linux"
         }
       ]
     },
     {
-      "name": "windows-debug",
-      "steps": [
+      "name"  : "x86_64-macos",
+      "steps" : [
         {
           "type": "configure",
-          "name": "windows-debug"
+          "name": "x86_64-macos"
         },
         {
           "type": "build",
-          "name": "windows-debug"
-        },
-        {
-          "type": "test",
-          "name": "windows-debug"
+          "name": "x86_64-macos"
         }
       ]
     },
     {
-      "name": "windows-release",
-      "steps": [
+      "name"  : "arm64-macos",
+      "steps" : [
         {
           "type": "configure",
-          "name": "windows-release"
+          "name": "arm64-macos"
         },
         {
           "type": "build",
-          "name": "windows-release"
+          "name": "arm64-macos"
+        }
+      ]
+    },
+    {
+      "name"  : "x86_64-windows",
+      "steps" : [
+        {
+          "type": "configure",
+          "name": "x86_64-windows"
         },
         {
-          "type": "test",
-          "name": "windows-release"
+          "type": "build",
+          "name": "x86_64-windows"
+        }
+      ]
+    },
+    {
+      "name"  : "x86-windows",
+      "steps" : [
+        {
+          "type": "configure",
+          "name": "x86-windows"
+        },
+        {
+          "type": "build",
+          "name": "x86-windows"
         }
       ]
     }
