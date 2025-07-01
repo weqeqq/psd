@@ -15,13 +15,13 @@ public:
   static constexpr std::uint64_t Auto = std::numeric_limits<std::uint64_t>::max();
 
   explicit Document() = default;
-  explicit Document(std::uint64_t row_count, std::uint64_t column_count)    
+  explicit Document(std::uint64_t row_count, std::uint64_t column_count)
     : row_count_    (row_count)
     , column_count_ (column_count) {}
 
   bool operator==(const Document &other) const {
-    return row_count_    == other.row_count_    && 
-           column_count_ == other.column_count_ && 
+    return row_count_    == other.row_count_    &&
+           column_count_ == other.column_count_ &&
            root_         == other.root_;
   }
   bool operator!=(const Document &other) const {
@@ -102,7 +102,7 @@ public:
 
   decltype(auto) FrontElement() {
     return root_.FrontElement();
-  } 
+  }
   decltype(auto) FrontElement() const {
     return root_.FrontElement();
   }
@@ -138,12 +138,12 @@ public:
   }
 
   std::uint64_t GetRCount() const {
-    return row_count_ == Auto 
+    return row_count_ == Auto
       ? root_.FindRCount()
       : row_count_;
   }
   std::uint64_t GetCCount() const {
-    return column_count_ == Auto 
+    return column_count_ == Auto
       ? root_.FindCCount()
       : column_count_;
   }
@@ -182,7 +182,7 @@ private:
       resource_info_ = stream.Read<ResourceInfo>();
       main_info_     = PSD::Decompressor(
         stream.Read<CompMainInfo<
-          DepthV, 
+          DepthV,
           ColorV>>()
       ).Decompress();
     }
@@ -222,8 +222,8 @@ private:
       stream.Write(header_);
       stream.Write(color_info_);
       stream.Write(resource_info_);
-      stream.Write(PSD::Compressor(main_info_).Compress(Compression::RLE));
-      stream.Write(PSD::Compressor(final_image_).Compress(Compression::RLE));
+      stream.Write(PSD::Compressor(main_info_).Compress(Compression::None));
+      stream.Write(PSD::Compressor(final_image_).Compress(Compression::None));
 
       stream.To(path_);
     }
@@ -231,7 +231,7 @@ private:
       main_info_.layer_info = DocumentImpl::RootConvertor(root).Convert();
       auto alpha_buffer = DocumentImpl::Processor(root).Process();
 
-      final_image_.buffer   = Image::Buffer<DepthV, ColorV>(alpha_buffer.GetRowCount(), alpha_buffer.GetColumnCount()); 
+      final_image_.buffer   = Image::Buffer<DepthV, ColorV>(alpha_buffer.GetRowCount(), alpha_buffer.GetColumnCount());
 
       for (auto index = 0u;
                 index < final_image_.buffer.GetLength();
@@ -265,4 +265,4 @@ private:
   std::uint64_t row_count_    = Auto;
   std::uint64_t column_count_ = Auto;
 };
-}; 
+};

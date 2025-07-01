@@ -20,11 +20,11 @@ public:
   explicit UnicodeString() = default;
 
   template <typename CharT>
-  UnicodeString(const std::basic_string<CharT> &string) 
+  UnicodeString(const std::basic_string<CharT> &string)
     : string_(UnicodeConvertor(string).template Convert<char32_t>()) {}
 
   template <typename CharT>
-  UnicodeString(const CharT *string) 
+  UnicodeString(const CharT *string)
     : UnicodeString(std::basic_string<CharT>(string)) {}
 
   template <typename CharT>
@@ -32,7 +32,7 @@ public:
     string_ = UnicodeConvertor(string).template Convert<char32_t>();
     return *this;
   }
-  template <typename CharT> 
+  template <typename CharT>
   UnicodeString &operator=(const CharT *string) {
     return operator=(std::basic_string<CharT>(string));
   }
@@ -69,11 +69,18 @@ public:
     return string_[index];
   }
 
+  auto &String() {
+    return string_;
+  }
+  const auto &String() const {
+    return string_;
+  }
+
   template <typename CharT>
   std::enable_if_t<
     std::is_same_v<CharT, char>     ||
-    std::is_same_v<CharT, char16_t> || 
-    std::is_same_v<CharT, char32_t> 
+    std::is_same_v<CharT, char16_t> ||
+    std::is_same_v<CharT, char32_t>
   > Push(CharT character) {
     string_.push_back(character);
   }
@@ -83,24 +90,28 @@ private:
 
 }; // UnicodeString
 
+namespace {
+
 std::ostream &operator<<(std::ostream &stream, const UnicodeString &input) {
-  stream << UnicodeConvertor(input.string_).Convert<char>();
+  stream << UnicodeConvertor(input.String()).Convert<char>();
   return stream;
 }
 
 UnicodeString::Iterator begin(UnicodeString &input) {
-  return input.string_.begin();
+  return input.String().begin();
 }
 UnicodeString::ConstIterator begin(const UnicodeString &input) {
-  return input.string_.begin();
+  return input.String().begin();
 }
 
 UnicodeString::Iterator end(UnicodeString &input) {
-  return input.string_.end();
+  return input.String().end();
 }
 UnicodeString::ConstIterator end(const UnicodeString &input) {
-  return input.string_.end();
+  return input.String().end();
 }
+}
+
 
 class UnicodeString::LengthCalculator {
 public:
@@ -109,14 +120,14 @@ public:
 
   std::uint64_t Calculate() const {
     std::uint64_t length = 4 + (UnicodeConvertor(input_.string_).Convert<char16_t>().size()) * sizeof(char16_t);
-    return input_.string_.size() % 2 
-      ? length + sizeof(char16_t) 
+    return input_.string_.size() % 2
+      ? length + sizeof(char16_t)
       : length;
   }
 
 private:
   const UnicodeString &input_;
-  
+
 }; // UnicodeString::LengthCalculator
 PSD_REGISTER_LENGTH_CALCULATOR(UnicodeString);
 
@@ -132,8 +143,8 @@ public:
 
     string.reserve(length);
 
-    for (auto index = 0u; 
-              index < length; 
+    for (auto index = 0u;
+              index < length;
               index++) {
       char16_t character = stream_.Read<char16_t>();
 
@@ -164,7 +175,7 @@ PSD_REGISTER_READER(UnicodeString);
 class UnicodeString::Writer {
 public:
 
-  explicit Writer(Stream &stream, const UnicodeString &input) : stream_(stream), input_(input) {} 
+  explicit Writer(Stream &stream, const UnicodeString &input) : stream_(stream), input_(input) {}
 
   void Write() {
     stream_.Write<std::uint32_t>(input_.string_.size());
@@ -183,4 +194,3 @@ private:
 PSD_REGISTER_WRITER(UnicodeString);
 
 }; // PSD
-

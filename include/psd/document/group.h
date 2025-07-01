@@ -31,7 +31,7 @@ public:
 };
 class GroupError::NoSuchLayer : public GroupError {
 public:
-  explicit NoSuchLayer() : GroupError("Layer not found") {} 
+  explicit NoSuchLayer() : GroupError("Layer not found") {}
 };
 class GroupError::EmptyGroup : public GroupError {
 public:
@@ -50,7 +50,7 @@ public:
   explicit UndefinedElement() : GroupError("Undefined element") {}
 };
 
-template <Depth::Tp DepthV = Depth::Eight, 
+template <Depth::Tp DepthV = Depth::Eight,
           Color::Tp ColorV = Color::RGB>
 class Group : public Element {
 public:
@@ -72,9 +72,9 @@ public:
       return left->Compare(right);
     };
     return std::equal(
-      element_list_.begin(), 
-      element_list_.end(), 
-      other.element_list_.begin(), 
+      element_list_.begin(),
+      element_list_.end(),
+      other.element_list_.begin(),
       compare
     );
   }
@@ -101,12 +101,12 @@ public:
   public:
 
     using iterator_category = std::forward_iterator_tag;
-    using value_type        = Element::Pointer; 
+    using value_type        = Element::Pointer;
     using difference_type   = std::ptrdiff_t;
     using pointer           = value_type *;
     using reference         = value_type &;
 
-    explicit IteratorClass(GroupT group, std::uint64_t current) 
+    explicit IteratorClass(GroupT group, std::uint64_t current)
       : group_   (group)
       , current_ (current) {}
 
@@ -130,12 +130,12 @@ public:
   public:
 
     using iterator_category = std::forward_iterator_tag;
-    using value_type        = Element::Pointer; 
+    using value_type        = Element::Pointer;
     using difference_type   = std::ptrdiff_t;
     using pointer           = value_type *;
     using reference         = value_type &;
 
-    explicit RevIteratorClass(GroupT group, std::uint64_t current) 
+    explicit RevIteratorClass(GroupT group, std::uint64_t current)
       : group_   (group)
       , current_ (current) {}
 
@@ -216,7 +216,7 @@ public:
       return 0;
     }
     auto result = *std::min_element(Begin(), End(), [](auto element, auto smallest) {
-      return element->GetTop() < 
+      return element->GetTop() <
              smallest->GetTop();
     });
     return result->GetTop();
@@ -347,7 +347,7 @@ public:
     return BackGroup(*this);
   }
 
-  const std::string GetName() const {
+  const std::string &GetName() const {
     return name_;
   }
   Group SetName(const std::string &name) {
@@ -462,22 +462,22 @@ private:
   }
 
 };
-template <Depth::Tp DepthV, 
+template <Depth::Tp DepthV,
           Color::Tp ColorV>
 auto begin(Group<DepthV, ColorV> &input) {
   return input.Begin();
 }
-template <Depth::Tp DepthV, 
+template <Depth::Tp DepthV,
           Color::Tp ColorV>
 auto begin(const Group<DepthV, ColorV> &input) {
   return input.Begin();
 }
-template <Depth::Tp DepthV, 
+template <Depth::Tp DepthV,
           Color::Tp ColorV>
 auto end(Group<DepthV, ColorV> &input) {
   return input.End();
 }
-template <Depth::Tp DepthV, 
+template <Depth::Tp DepthV,
           Color::Tp ColorV>
 auto end(const Group<DepthV, ColorV> &input) {
   return input.End();
@@ -494,4 +494,4 @@ decltype(auto) GroupCast(Element::ConstPointer input) {
   return Group<DepthV, ColorV>::Cast(input);
 }
 
-}; 
+};

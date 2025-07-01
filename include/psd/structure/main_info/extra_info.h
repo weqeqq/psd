@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <psd/structure/main_info/extra_info_element.h>
 #include <psd/structure/main_info/extra_info/unicode_name.h>
@@ -20,7 +20,7 @@ public:
 
   using Iterator      = IteratorBaseClass<ExtraInfo>;
   using ConstIterator = IteratorBaseClass<const ExtraInfo>;
-  
+
   explicit ExtraInfo() = default;
 
   #ifdef PSD_DEBUG
@@ -72,12 +72,19 @@ public:
     return *std::static_pointer_cast<ExtraInfoElementT>(Get(ExtraInfoElementT::ID));
   }
 
+  auto &InsertionOrder() {
+    return insertion_order_;
+  }
+  const auto &InsertionOrder() const {
+    return insertion_order_;
+  }
+
   template <typename ElementT>
   void Set(ElementT element) {
     if constexpr (std::is_same_v<ElementT, ExtraInfoElement::Tp>) {
-      #ifdef PSD_DEBUG 
+      #ifdef PSD_DEBUG
       insertion_order_.push_back(element->GetID());
-      #endif 
+      #endif
       data_[element->GetID()] = element;
     } else {
       Set(std::static_pointer_cast<ExtraInfoElement>(
@@ -109,8 +116,8 @@ private:
   std::unordered_map<std::uint32_t, ExtraInfoElement::Tp> data_;
 
   std::unordered_map<std::uint32_t, ExtraInfoElement::Tp> CopyData() const {
-    std::unordered_map<std::uint32_t, ExtraInfoElement::Tp> output = data_; 
-    
+    std::unordered_map<std::uint32_t, ExtraInfoElement::Tp> output = data_;
+
     for (auto &[id, ptr] : output) {
       ptr = ptr->Clone();
     }
@@ -119,7 +126,7 @@ private:
 
 }; // ExtraInfo
 
-template <typename ExtraInfoT> 
+template <typename ExtraInfoT>
 class ExtraInfo::IteratorBaseClass {
 public:
 
@@ -134,7 +141,7 @@ static constexpr bool IsConst = std::is_const_v<ExtraInfoT>;
     std::unordered_map<std::uint32_t, ExtraInfoElement::Tp>::const_iterator,
     std::unordered_map<std::uint32_t, ExtraInfoElement::Tp>::iterator>;
 
-  #ifdef PSD_DEBUG 
+  #ifdef PSD_DEBUG
   IteratorBaseClass(
     ExtraInfoT &extra_info,
     InsertionOrderIteratorTp insertion_order_iterator
@@ -151,13 +158,13 @@ static constexpr bool IsConst = std::is_const_v<ExtraInfoT>;
     return *data_iterator_;
     #endif
   }
-  IteratorBaseClass<ExtraInfoT> &operator++() { 
+  IteratorBaseClass<ExtraInfoT> &operator++() {
     #ifdef PSD_DEBUG
     insertion_order_iterator_++;
     #else
     data_iterator_++;
     #endif
-    return *this; 
+    return *this;
   }
   IteratorBaseClass<ExtraInfoT> operator++(int) {
     auto tmp = *this;
@@ -186,34 +193,10 @@ private:
 
 }; // ExtraInfo::IteratorBaseClass
 
-ExtraInfo::Iterator begin(ExtraInfo &input) {
-  #ifdef PSD_DEBUG
-  return ExtraInfo::Iterator(input, input.insertion_order_.begin());
-  #else
-  return ExtraInfo::Iterator(input.data_.begin());
-  #endif
-}
-ExtraInfo::ConstIterator begin(const ExtraInfo &input) {
-  #ifdef PSD_DEBUG
-  return ExtraInfo::ConstIterator(input, input.insertion_order_.begin());
-  #else
-  return ExtraInfo::ConstIterator(input.data_.begin());
-  #endif
-}
-ExtraInfo::Iterator end(ExtraInfo &input) {
-  #ifdef PSD_DEBUG
-  return ExtraInfo::Iterator(input, input.insertion_order_.end());
-  #else
-  return ExtraInfo::Iterator(input.data_.end());
-  #endif
-}
-ExtraInfo::ConstIterator end(const ExtraInfo &input) {
-  #ifdef PSD_DEBUG
-  return ExtraInfo::ConstIterator(input, input.insertion_order_.end());
-  #else
-  return ExtraInfo::ConstIterator(input.data_.end());
-  #endif
-}
+ExtraInfo::Iterator begin(ExtraInfo &input);
+ExtraInfo::ConstIterator begin(const ExtraInfo &input);
+ExtraInfo::Iterator end(ExtraInfo &input);
+ExtraInfo::ConstIterator end(const ExtraInfo &input);
 
 class ExtraInfo::LengthCalculator {
 public:
@@ -222,7 +205,7 @@ public:
 
   std::uint64_t Calculate() const {
     std::uint64_t output = 0;
-    
+
     for (const auto &element : input_) {
       output += PSD::LengthCalculator(element).Calculate();
     }
@@ -246,7 +229,7 @@ public:
     std::uint64_t stop = length + stream_.GetPos();
 
     while (stream_.GetPos() < stop) {
-      ExtraInfoElement::Header header; 
+      ExtraInfoElement::Header header;
 
       if ((stop - stream_.GetPos()) < PSD::LengthCalculator(header).Calculate()) {
         stream_.AdjustPos(stop - stream_.GetPos());
@@ -311,4 +294,3 @@ private:
 PSD_REGISTER_WRITER(ExtraInfo);
 
 }; // PSD
-
