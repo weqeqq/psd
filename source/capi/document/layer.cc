@@ -53,13 +53,6 @@ psd_error psd_layer_set_image(
     ));
   });
 }
-psd_error psd_layer_set_image_from_file(
-  psd_layer *layer, const char *path
-) {
-  return Detail::HandleError([&](){
-      LayerCast(layer)->SetImage(std::filesystem::path(path));
-  });
-}
 unsigned char *psd_layer_get_image(const psd_layer *layer) {
   try {
     auto &image = LayerCast(layer)->GetBuffer();

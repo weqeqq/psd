@@ -4,7 +4,6 @@
 #include <psd/structure/main_info/layer_info/layer_data.h>
 #include <psd/structure/main_info/layer_info/channel_data.h>
 #include <psd/document/element.h>
-#include <image/decode.h>
 
 namespace PSD {
 
@@ -35,11 +34,11 @@ public:
     UpdateRectangle();
     return *this;
   }
-  Layer &SetImage(const std::filesystem::path &path) {
-    return SetImage(
-      Image::Decode<DepthV, ColorV>(path)
-    );
-  }
+  // Layer &SetImage(const std::filesystem::path &path) {
+  //   return SetImage(
+  //     Image::Decode<DepthV, ColorV>(path)
+  //   );
+  // }
 
   Layer &SetOffset(std::uint64_t x_offset, std::uint64_t y_offset) {
     rectangle_.top    = y_offset;
@@ -73,7 +72,7 @@ public:
     return false;
   }
   virtual bool IsLayer() const override {
-    return true; 
+    return true;
   }
 
   virtual Element::Pointer Clone() const override {
@@ -135,7 +134,7 @@ private:
   Blending::Tp blending_ = Blending::Normal;
 
   Rectangle rectangle_;
-}; 
+};
 template <Depth::Tp DepthV = Depth::Eight,
           Color::Tp ColorV = Color::RGB>
 decltype(auto) LayerCast(Element::Pointer input) {
@@ -147,4 +146,3 @@ decltype(auto) LayerCast(Element::ConstPointer input) {
   return *std::static_pointer_cast<const Layer<DepthV, ColorV>>(input);
 }
 };
-

@@ -3,7 +3,6 @@
 
 #include <psd/document/impl/convertor/root.h>
 #include <psd/document/impl/processor/group.h>
-#include <image/encode.h>
 #include <psd/structure.h>
 
 namespace PSD {
@@ -165,9 +164,6 @@ public:
     output.SetCCount (GetCCount());
 
     output.Encode();
-  }
-  void Export(const std::string &path) const {
-    Image::Encode(DocumentImpl::Processor(root_).Process(), path);
   }
 
 private:

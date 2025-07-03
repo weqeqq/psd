@@ -19,7 +19,6 @@ void psd_layer_delete(psd_layer *layer);
 psd_layer *psd_layer_copy(const psd_layer *layer);
 
 psd_error psd_layer_set_image(psd_layer *layer, const unsigned char *buffer, unsigned row_count, unsigned column_count);
-psd_error psd_layer_set_image_from_file(psd_layer *layer, const char *path);
 unsigned char *psd_layer_get_image(const psd_layer *layer);
 
 unsigned psd_layer_get_row_count(const psd_layer *layer);

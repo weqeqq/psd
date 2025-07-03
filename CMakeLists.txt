@@ -25,7 +25,7 @@ FetchContent_Declare(
   image
   GIT_REPOSITORY https://github.com/weqeqq/image.git
   GIT_BRANCH psd-cpp
-  GIT_TAG 65b0e9be79ade948c120c971849e919d8c9deed5
+  GIT_TAG 205819e59e89878dd80e02783da9d82c449e7c07
 )
 FetchContent_Declare(
   xsimd
