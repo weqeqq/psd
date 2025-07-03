@@ -32,7 +32,7 @@ Image::AlphaBuffer<> ConstructImage(
 } // namespace
 extern "C" {
 //
-psd_layer *psd_layer_create(const char *name) {
+psd_layer *psd_layer_new(const char *name) {
   return LayerCast(new Layer<>(std::string(name)));
 }
 void psd_layer_delete(psd_layer *layer) {

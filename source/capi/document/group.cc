@@ -17,7 +17,7 @@ const psd_group *GroupCast(const Group<> *group) {
 }
 extern "C" {
 //
-psd_group *psd_group_create(const char *name) {
+psd_group *psd_group_new(const char *name) {
   try {
     return GroupCast(new Group<>(std::string(name)));
   } catch(...) {

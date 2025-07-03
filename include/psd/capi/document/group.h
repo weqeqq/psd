@@ -13,7 +13,7 @@ extern "C" {
 
 typedef struct psd_group psd_group;
 
-psd_group *psd_group_create(const char *name);
+psd_group *psd_group_new(const char *name);
 void psd_group_delete(psd_group *group);
 psd_group *psd_group_copy(const psd_group *group);
 

@@ -13,7 +13,7 @@ extern "C" {
 
 typedef struct psd_layer psd_layer;
 
-psd_layer *psd_layer_create(const char *name);
+psd_layer *psd_layer_new(const char *name);
 void psd_layer_delete(psd_layer *layer);
 
 psd_layer *psd_layer_copy(const psd_layer *layer);
