@@ -20,10 +20,7 @@ const psd_document *DocumentCast(const Document<> *document) {
 extern "C" {
 //
 
-psd_document *psd_documnet_new(unsigned row_count, unsigned column_count) {
-  return DocumentCast(new Document<>(row_count, column_count));
-}
-psd_document *psd_document_new_empty(void) {
+psd_document *psd_document_new(void) {
   return DocumentCast(new Document<>());
 }
 psd_document *psd_document_copy(const psd_document *document) {

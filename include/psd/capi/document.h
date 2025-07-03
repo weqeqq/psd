@@ -15,8 +15,7 @@ extern "C" {
 
 typedef struct psd_document psd_document;
 
-psd_document *psd_documnet_new(unsigned row_count, unsigned column_count);
-psd_document *psd_document_new_empty(void);
+psd_document *psd_document_new(void);
 psd_document *psd_document_copy(const psd_document *document);
 
 void psd_document_delete(psd_document *document);
