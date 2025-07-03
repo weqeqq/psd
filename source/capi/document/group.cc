@@ -45,6 +45,9 @@ psd_error psd_group_push_layer(psd_group *group, psd_layer *other) {
 const char *psd_group_get_name(const psd_group *group) {
   return GroupCast(group)->GetName().c_str();
 }
+void psd_group_set_name(psd_group *group, const char *name) {
+  GroupCast(group)->SetName(std::string(name));
+}
 int psd_group_is_empty(const psd_group *group) {
   return GroupCast(group)->IsEmpty();
 }
