@@ -24,7 +24,8 @@ include(FetchContent)
 FetchContent_Declare(
   image
   GIT_REPOSITORY https://github.com/weqeqq/image.git
-  GIT_TAG        02bf696589cbb14cf08e877734d17da1eef98cfa
+  GIT_BRANCH psd-cpp
+  GIT_TAG 65b0e9be79ade948c120c971849e919d8c9deed5
 )
 FetchContent_Declare(
   xsimd
@@ -44,8 +45,6 @@ set_target_properties(psd PROPERTIES
   CXX_STANDARD          17
   CXX_STANDARD_REQUIRED 1
   CXX_EXTENSIONS        0)
-
-target_compile_options(psd PRIVATE -O3 -Wall -Wpedantic)
 
 install(TARGETS psd)
 install(DIRECTORY include DESTINATION include)
