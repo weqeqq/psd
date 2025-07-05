@@ -18,8 +18,16 @@ jobs:
         with:
           arch: x64
 
+      - name: Install file-cpp
+        run: |
+          git clone https://github.com/weqeqq/file-cpp.git
+          cd file-cpp
+          cmake --preset release -DFILE_BUILD_TESTS=OFF
+          cmake --build --preset release
+          cmake --install --preset release --prefix ${{ github.workspace }}/prefix
+
       - name: Configure
-        run: cmake --preset release -DPSD_BUILD_TESTS=ON
+        run: cmake --preset release -DPSD_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH=${{ github.workspace }}/prefix
 
       - name: Build
         run: cmake --build --preset release
@@ -38,8 +46,16 @@ jobs:
         with:
           platform: x64
 
+      - name: Install file-cpp
+        run: |
+          git clone https://github.com/weqeqq/file-cpp.git
+          cd file-cpp
+          cmake --preset release -DFILE_BUILD_TESTS=OFF -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G Ninja
+          cmake --build --preset release
+          cmake --install --preset release --prefix ${{ github.workspace }}/prefix
+
       - name: Configure
-        run: cmake --preset release -DPSD_BUILD_TESTS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G Ninja
+        run: cmake --preset release -DPSD_BUILD_TESTS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G Ninja -DCMAKE_PREFIX_PATH=${{ github.workspace }}/prefix
 
       - name: Build
         run: cmake --build --preset release
@@ -53,8 +69,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install file-cpp
+        run: |
+          git clone https://github.com/weqeqq/file-cpp.git
+          cd file-cpp
+          cmake --preset release -DFILE_BUILD_TESTS=OFF -G "MinGW Makefiles"
+          cmake --build --preset release
+          cmake --install --preset release --prefix ${{ github.workspace }}/prefix
+
       - name: Configure
-        run: cmake --preset release -DPSD_BUILD_TESTS=ON -G "MinGW Makefiles"
+        run: cmake --preset release -DPSD_BUILD_TESTS=ON -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH=${{ github.workspace }}/prefix
 
       - name: Build
         run: cmake --build --preset release
