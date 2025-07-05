@@ -11,7 +11,6 @@ target_sources(psd PUBLIC
     FILE_SET HEADERS BASE_DIRS
         headers
     FILES
-        headers/psd/psd.h
         headers/psd/error.h
     PRIVATE
         sources/file.cc
