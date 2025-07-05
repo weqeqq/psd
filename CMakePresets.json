@@ -7,122 +7,49 @@
   },
   "configurePresets": [
     {
-      "name": "cmake-flags",
-      "hidden": true,
-
-      "warnings": {
-        "dev": true,
-        "deprecated": false,
-        "uninitialized": false,
-        "unusedCli": true,
-        "systemVars": true
-      },
-      "errors": {
-        "dev": false,
-        "deprecated": false
-      }
-    },
-    {
-      "name": "debug-build",
-      "hidden": true,
-
-      "inherits": ["cmake-flags"],
-      "generator": "Unix Makefiles",
+      "name": "debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": true
-      }
-    },
-    {
-      "name": "release-build",
-      "hidden": true,
-
-      "inherits": ["cmake-flags"],
-      "generator": "Unix Makefiles",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
-    },
-    {
-      "name": "debug",
-
-      "inherits": ["debug-build"],
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      },
       "binaryDir": "${sourceDir}/build/debug"
     },
     {
-      "name": "x86_64-linux",
-      "binaryDir": "${sourceDir}/build/x86_64-linux",
-
-      "inherits": ["release-build"]
-    },
-    {
-      "name": "x86_64-macos",
-      "binaryDir": "${sourceDir}/build/x86_64-macos",
-
-      "inherits": ["release-build"],
+      "name": "release",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain/x86_64-macos.cmake"
-      }
-    },
-    {
-      "name": "arm64-macos",
-      "binaryDir": "${sourceDir}/build/arm64-macos",
-
-      "inherits": ["release-build"],
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain/arm64-macos.cmake"
-      }
-    },
-    {
-      "name": "x86_64-windows",
-      "binaryDir": "${sourceDir}/build/x86_64-windows",
-
-      "inherits": ["release-build"],
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain/x86_64-windows.cmake"
-      }
-    },
-    {
-      "name": "x86-windows",
-      "binaryDir": "${sourceDir}/build/x86-windows",
-
-      "inherits": ["release-build"],
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain/x86-windows.cmake"
-      }
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "binaryDir": "${sourceDir}/build/release"
     }
   ],
   "buildPresets": [
     {
-      "configuration": "Debug",
       "name": "debug",
+      "configuration": "Debug",
       "configurePreset": "debug"
     },
     {
+      "name": "release",
       "configuration": "Release",
-      "name": "x86_64-linux",
-      "configurePreset": "x86_64-linux"
-    },
-    {
-      "configuration": "Release",
-      "name": "x86_64-macos",
-      "configurePreset": "x86_64-macos"
-    },
-    {
-      "configuration": "Release",
-      "name": "arm64-macos",
-      "configurePreset": "arm64-macos"
-    },
-    {
-      "configuration": "Release",
-      "name": "x86_64-windows",
-      "configurePreset": "x86_64-windows"
-    },
-    {
-      "configuration": "Release",
-      "name": "x86-windows",
-      "configurePreset": "x86-windows"
+      "configurePreset": "release"
     }
   ],
-  "testPresets": [],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ],
   "workflowPresets": [
     {
       "name": "debug",
@@ -134,71 +61,27 @@
         {
           "type": "build",
           "name": "debug"
+        },
+        {
+          "type": "test",
+          "name": "debug"
         }
       ]
     },
     {
-      "name": "x86_64-linux",
+      "name": "release",
       "steps": [
         {
           "type": "configure",
-          "name": "x86_64-linux"
+          "name": "release"
         },
         {
           "type": "build",
-          "name": "x86_64-linux"
-        }
-      ]
-    },
-    {
-      "name": "x86_64-macos",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "x86_64-macos"
+          "name": "release"
         },
         {
-          "type": "build",
-          "name": "x86_64-macos"
-        }
-      ]
-    },
-    {
-      "name": "arm64-macos",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "arm64-macos"
-        },
-        {
-          "type": "build",
-          "name": "arm64-macos"
-        }
-      ]
-    },
-    {
-      "name": "x86_64-windows",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "x86_64-windows"
-        },
-        {
-          "type": "build",
-          "name": "x86_64-windows"
-        }
-      ]
-    },
-    {
-      "name": "x86-windows",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "x86-windows"
-        },
-        {
-          "type": "build",
-          "name": "x86-windows"
+          "type": "test",
+          "name": "release"
         }
       ]
     }
