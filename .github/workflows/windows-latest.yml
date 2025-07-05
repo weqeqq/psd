@@ -1,0 +1,63 @@
+name: windows-latest
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-msvc:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        run: cmake --preset release -DPSD_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build --preset release
+
+      - name: Test
+        run: ctest --preset release
+
+  build-clang:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Clang
+        uses: egor-tensin/setup-clang@v1
+        with:
+          platform: x64
+
+      - name: Configure
+        run: cmake --preset release -DPSD_BUILD_TESTS=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G Ninja
+
+      - name: Build
+        run: cmake --build --preset release
+
+      - name: Test
+        run: ctest --preset release
+
+  build-mingw:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset release -DPSD_BUILD_TESTS=ON -G "MinGW Makefiles"
+
+      - name: Build
+        run: cmake --build --preset release
+
+      - name: Test
+        run: ctest --preset release
