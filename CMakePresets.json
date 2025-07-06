@@ -12,6 +12,7 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       },
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/debug"
     },
     {
@@ -19,7 +20,49 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       },
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/release"
+    },
+    {
+      "name": "ci",
+      "hidden": true,
+      "inherits": "debug",
+      "cacheVariables": {
+        "PSD_BUILD_TESTS": "ON",
+        "PSD_FETCH_FILE_CPP": "ON",
+        "PSD_FETCH_UNICODE": "ON"
+      }
+    },
+    {
+      "name": "ci-msvc",
+      "inherits": "ci",
+      "binaryDir": "${sourceDir}/build/ci-msvc",
+      "cacheVariables": {
+        "CMAKE_GENERATOR": "Visual Studio 17 2022",
+        "CMAKE_GENERATOR_PLATFORM": "x64",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      }
+    },
+    {
+      "name": "ci-clang",
+      "inherits": "ci",
+      "binaryDir": "${sourceDir}/build/ci-clang",
+      "cacheVariables": {
+        "CMAKE_GENERATOR": "Ninja",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "ci-gcc",
+      "inherits": "ci",
+      "binaryDir": "${sourceDir}/build/ci-gcc",
+      "cacheVariables": {
+        "CMAKE_GENERATOR": "Ninja",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
     }
   ],
   "buildPresets": [
@@ -32,6 +75,21 @@
       "name": "release",
       "configuration": "Release",
       "configurePreset": "release"
+    },
+    {
+      "name": "ci-msvc",
+      "configuration": "Debug",
+      "configurePreset": "ci-msvc"
+    },
+    {
+      "name": "ci-gcc",
+      "configuration": "Debug",
+      "configurePreset": "ci-gcc"
+    },
+    {
+      "name": "ci-clang",
+      "configuration": "Debug",
+      "configurePreset": "ci-clang"
     }
   ],
   "testPresets": [
@@ -45,6 +103,27 @@
     {
       "name": "release",
       "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-msvc",
+      "configurePreset": "ci-msvc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-gcc",
+      "configurePreset": "ci-gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-clang",
+      "configurePreset": "ci-clang",
       "output": {
         "outputOnFailure": true
       }
@@ -82,6 +161,57 @@
         {
           "type": "test",
           "name": "release"
+        }
+      ]
+    },
+    {
+      "name": "ci-msvc",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "ci-msvc"
+        },
+        {
+          "type": "build",
+          "name": "ci-msvc"
+        },
+        {
+          "type": "test",
+          "name": "ci-msvc"
+        }
+      ]
+    },
+    {
+      "name": "ci-gcc",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "ci-gcc"
+        },
+        {
+          "type": "build",
+          "name": "ci-gcc"
+        },
+        {
+          "type": "test",
+          "name": "ci-gcc"
+        }
+      ]
+    },
+    {
+      "name": "ci-clang",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "ci-clang"
+        },
+        {
+          "type": "build",
+          "name": "ci-clang"
+        },
+        {
+          "type": "test",
+          "name": "ci-clang"
         }
       ]
     }
