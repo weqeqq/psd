@@ -45,6 +45,9 @@ target_link_libraries(psd
         file::file
         # unicode::unicode
 )
+if(CMAKE_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
+    target_compile_definitions(psd PUBLIC PSD_LITTLE_ENDIAN)
+endif()
 add_library(psd::psd ALIAS psd)
 if(PSD_BUILD_TESTS)
     enable_testing()

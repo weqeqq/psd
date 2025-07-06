@@ -10,8 +10,6 @@
 #include <file/output.h>
 #include <vector>
 
-#include <endian.h>
-
 #ifdef _MSC_VER
 #define PSD_COMPILER_MSVC 1
 #else
@@ -146,26 +144,18 @@ inline constexpr T MemSwap(T value) {
       sizeof(T) == 8, "Unsupported");
   }
 };
-inline constexpr bool IsLE() {
-  #if PSD_COMPILER_MSVC
-    return true;
-  #else
-    return __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__;
-  #endif
-}
 template <typename T>
 inline constexpr T SwapLE(T value) {
-  if constexpr (!IsLE()) {
-    return value;
-  } else {
+  #ifdef PSD_LITTLE_ENDIAN
     if constexpr (std::is_floating_point_v<T>) {
       return MemSwap(value);
     } else {
       return ByteSwap(value);
     }
-  }
+  #else
+    return value;
+  #endif
 }
-
 template <typename T>
 static constexpr bool ByteSwapSupported = std::is_integral_v<T> || std::is_floating_point_v<T>;
 
