@@ -26,7 +26,6 @@
     {
       "name": "ci",
       "hidden": true,
-      "inherits": "debug",
       "cacheVariables": {
         "PSD_BUILD_TESTS": "ON",
         "PSD_FETCH_FILE_CPP": "ON",
