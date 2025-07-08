@@ -1,13 +1,17 @@
 
+#pragma once
+
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
 
+#include <initializer_list>
 #include <iterator>
 #include <psd/error.h>
 #include <type_traits>
 #include <file/input.h>
 #include <file/output.h>
+#include <utility>
 #include <vector>
 
 #ifdef _MSC_VER
@@ -31,6 +35,14 @@
 namespace PSD::llapi {
 //
 
+class Stream;
+
+template <typename T>
+struct FromStreamFn;
+
+template <typename T>
+struct ToStreamFn;
+
 using U8  = std::uint8_t;
 using U16 = std::uint16_t;
 using U32 = std::uint32_t;
@@ -40,7 +52,7 @@ using I16 = std::int16_t;
 using I32 = std::int32_t;
 using I64 = std::int64_t;
 
-namespace Detail {
+namespace detail {
 //
 template <typename T>
 inline constexpr
@@ -172,37 +184,165 @@ static constexpr bool SupportedIterator =
    std::is_same_v<IteratorCategory<T>, std::random_access_iterator_tag>) &&
   ByteSwapSupported<IteratorValue<T>>;
 
-} // namespace Detail
+} // namespace detail
 class Stream {
+  template <typename V, typename T, typename F, typename... A>
+  struct FromStreamFnOperatorImplemented_ {
+    static constexpr bool Value = false;
+  };
+  template <typename T, typename F, typename... A>
+  struct FromStreamFnOperatorImplemented_<std::void_t<decltype(std::declval<F>()(
+    std::declval<Stream &>(),
+    std::declval<T &>(),
+    std::declval<std::conditional_t<std::is_fundamental_v<T>, A, const A &>>()...
+  ))>, T, F, A...> {
+    static constexpr bool Value = true;
+  };
+  template <typename T, typename F, typename... A>
+  static constexpr bool FromStreamFnOperatorImplemented =
+    FromStreamFnOperatorImplemented_<void, T, F, A...>::Value;
+
+  template <typename V, typename T, typename... A>
+  struct FromStreamFnImplemented_ {
+    static constexpr bool Value = false;
+  };
+  template <typename T, typename... A>
+  struct FromStreamFnImplemented_<std::void_t<decltype(FromStreamFn<T>())>, T, A...> {
+    static constexpr bool Value =
+      FromStreamFnOperatorImplemented<T, FromStreamFn<T>, A...>;
+  };
+  template <typename T, typename... A>
+  static constexpr bool FromStreamFnImplemented =
+    FromStreamFnImplemented_<void, T, A...>::Value;
+
+  template <typename V, typename T, typename... A>
+  struct FromStreamFnImplementedInClass_ {
+    static constexpr bool Value = false;
+  };
+  template <typename T, typename... A>
+  struct FromStreamFnImplementedInClass_<std::void_t<decltype(typename T::FromStreamFn())>, T, A...> {
+    static constexpr bool Value =
+      FromStreamFnOperatorImplemented<T, typename T::FromStreamFn, A...>;
+  };
+  template <typename T, typename... A>
+  static constexpr bool FromStreamFnImplementedInClass =
+    FromStreamFnImplementedInClass_<void, T, A...>::Value;
+
+  template <typename V, typename T, typename F, typename... A>
+  struct ToStreamFnOperatorImplemented_ {
+    static constexpr bool Value = false;
+  };
+  template <typename T, typename F, typename... A>
+  struct ToStreamFnOperatorImplemented_<std::void_t<decltype(std::declval<F>()(
+    std::declval<Stream &>(),
+    std::declval<const T &>(),
+    std::declval<std::conditional_t<std::is_fundamental_v<T>, A, const A &>>()...
+  ))>, T, F, A...> {
+    static constexpr bool Value = true;
+  };
+  template <typename T, typename F, typename... A>
+  static constexpr bool ToStreamFnOperatorImplemented =
+    ToStreamFnOperatorImplemented_<void, T, F, A...>::Value;
+
+  template <typename V, typename T, typename... A>
+  struct ToStreamFnImplemented_ {
+    static constexpr bool Value = false;
+  };
+  template <typename T, typename... A>
+  struct ToStreamFnImplemented_<std::void_t<decltype(ToStreamFn<T>())>, T, A...> {
+    static constexpr bool Value =
+      ToStreamFnOperatorImplemented<T, ToStreamFn<T>, A...>;
+  };
+  template <typename T, typename... A>
+  static constexpr bool ToStreamFnImplemented =
+    ToStreamFnImplemented_<void, T, A...>::Value;
+
+  template <typename V, typename T, typename... A>
+  struct ToStreamFnImplementedInClass_ {
+    static constexpr bool Value = false;
+  };
+  template <typename T, typename... A>
+  struct ToStreamFnImplementedInClass_<std::void_t<decltype(typename T::ToStreamFn())>, T, A...> {
+    static constexpr bool Value =
+      ToStreamFnOperatorImplemented<T, typename T::ToStreamFn, A...>;
+  };
+  template <typename T, typename... A>
+  static constexpr bool ToStreamFnImplementedInClass =
+    ToStreamFnImplementedInClass_<void, T, A...>::Value;
 public:
   Stream() = default;
-  Stream(const std::filesystem::path &path) : buffer_(File::From(path)) {}
+
+  Stream(const std::filesystem::path &path)
+    : buffer_(File::From(path)) {}
+
+  Stream(std::vector<U8> data)
+    : buffer_(std::move(data)) {}
+
+  Stream(std::initializer_list<U8> data)
+    : buffer_(std::move(data)) {}
 
   template <typename T>
-  std::enable_if_t<Detail::ByteSwapSupported<T>, T>
+  std::enable_if_t<detail::ByteSwapSupported<T>, T>
   Read() {
     if (Overflow(sizeof(T))) {
       throw Error("Stream::NotEnoughData");
     }
-    return Detail::SwapLE(Access<T>());
+    return detail::SwapLE(Access<T>());
+  }
+  template <typename T, typename... A>
+  std::enable_if_t<
+    FromStreamFnImplemented<T, A...> ||
+    FromStreamFnImplementedInClass<T, A...>,
+    T>
+  Read(A&&... arguments) {
+    T output;
+    return std::move(ReadTo(output));
+  }
+  template <typename T>
+  std::enable_if_t<detail::ByteSwapSupported<T>, T&>
+  ReadTo(T &output) {
+    return output = Read<T>();
+  }
+  template <typename T, typename... A>
+  std::enable_if_t<FromStreamFnImplemented<T, A...>, T&>
+  ReadTo(T &output, A&&... arguments) {
+    FromStreamFn<T>()(*this, output, std::forward<A>(arguments)...);
+    return output;
+  }
+  template <typename T, typename... A>
+  std::enable_if_t<FromStreamFnImplementedInClass<T, A...>, T&>
+  ReadTo(T &output, A&&... arguments) {
+    typename T::FromStreamFn()(*this, output, std::forward<A>(arguments)...);
+    return output;
   }
 
   template <typename T>
-  std::enable_if_t<Detail::ByteSwapSupported<T>>
+  std::enable_if_t<detail::ByteSwapSupported<T>>
   Write(T value) {
     if (Overflow(sizeof(T))) {
       AdjustBuffer(sizeof(T));
     }
-    Access<T>() = Detail::SwapLE(value);
+    Access<T>() = detail::SwapLE(value);
   }
+  template <typename T, typename... A>
+  std::enable_if_t<ToStreamFnImplemented<T, A...>>
+  Write(const T &input, A&&... arguments) {
+    ToStreamFn<T>()(*this, input, std::forward<A>(arguments)...);
+  }
+  template <typename T, typename... A>
+  std::enable_if_t<ToStreamFnImplementedInClass<T, A...>>
+  Write(const T &input, A&&... arguments) {
+    typename T::ToStreamFn()(*this, input, std::forward<A>(arguments)...);
+  }
+
   template <typename I>
-  std::enable_if_t<Detail::SupportedIterator<I>>
+  std::enable_if_t<detail::SupportedIterator<I>>
   Read(I begin, I end) {
     auto distance = std::distance(begin, end);
     if (Overflow(distance)) {
       throw Error("Stream::NotEnoughData");
     }
-    using Value = Detail::IteratorValue<I>;
+    using Value = detail::IteratorValue<I>;
     if constexpr (
       std::is_same_v<Value, U8> ||
       std::is_same_v<Value, I8>) {
@@ -214,13 +354,13 @@ public:
     offset_ += distance;
   }
   template <typename I>
-  std::enable_if_t<Detail::SupportedIterator<I>>
+  std::enable_if_t<detail::SupportedIterator<I>>
   Write(I begin, I end) {
     const auto distance = std::distance(begin, end);
     if (Overflow(distance)) {
       AdjustBuffer(distance);
     }
-    using Value = Detail::IteratorValue<I>;
+    using Value = detail::IteratorValue<I>;
     if constexpr (
       std::is_same_v<Value, U8> ||
       std::is_same_v<Value, I8>) {
@@ -255,6 +395,9 @@ public:
   void SetOffset(unsigned value) {
     offset_ = value;
   }
+  unsigned GetOffset() const {
+    return offset_;
+  }
 private:
   std::vector<U8> buffer_; unsigned offset_ = 0;
 
@@ -277,4 +420,5 @@ private:
     );
   }
 };
+
 }; // namespace PSD::llapi
