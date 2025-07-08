@@ -1,6 +1,7 @@
 
 add_executable(tests)
 target_sources(tests PRIVATE
+    sources/llapi/structure/header_test.cc
     sources/llapi/stream_test.cc
 )
 include(FetchContent)
