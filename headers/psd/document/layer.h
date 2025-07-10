@@ -2,11 +2,9 @@
 #pragma once
 
 #include "psd/llapi/structure/info/layer_info/layer_data.h"
-#include <cstddef>
 #include <memory>
 #include <psd/document/entry.h>
 #include <string>
-#include <vector>
 #include <psd/llapi/structure.h>
 
 #include <image/image.h>

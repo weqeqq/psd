@@ -5,7 +5,6 @@
 #include "psd/document/detail/root_converter.h"
 #include "psd/llapi/structure/header.h"
 #include "psd/llapi/structure/info/layer_info/channel_data.h"
-#include <iterator>
 
 namespace PSD {
 //
