@@ -22,7 +22,8 @@ void psd_document_delete(psd_document *document);
 
 psd_error psd_open(psd_document **document, const char *path);
 psd_error psd_save(psd_document *document, const char *path);
-psd_error psd_export(psd_document *document, unsigned char **output);
+psd_error psd_export(psd_document *document, unsigned char **output, unsigned *row_count, unsigned *column_count);
+psd_error psd_decode(const char *path, unsigned char **output, unsigned *row_count, unsigned *column_count);
 
 unsigned psd_document_get_row_count(const psd_document *document);
 unsigned psd_document_get_column_count(const psd_document *document);

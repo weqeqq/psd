@@ -112,4 +112,38 @@ private:
 
 inline constexpr auto Save = SaveFn();
 
+class DecodeFn {
+public:
+  ::Image::Buffer<> operator()(const std::filesystem::path &path) const {
+    llapi::Stream stream(path);
+    auto header = stream.Read<llapi::Header>();
+    stream     += stream.Read<llapi::U32>(); // skip color info
+    stream     += stream.Read<llapi::U32>(); // skip resource info
+    stream     += stream.Read<llapi::U32>(); // skip info
+    auto image  = stream.Read<llapi::Image>();
+    image.Decompress(header.row_count, header.column_count);
+    return ProcessImage(header, image);
+  }
+private:
+  ::Image::Buffer<> ProcessImage(const llapi::Header &header, const llapi::Image &input) const {
+    ::Image::Buffer<> output(std::vector<llapi::U8>(
+      header.row_count    *
+      header.column_count * 4,
+      0xff
+    ), header.row_count, header.column_count);
+    for (auto channel = 0u;
+              channel < output.ChannelCount()-1;
+              channel++) {
+      for (auto index = 0u;
+                index < output.Length();
+                index++) {
+        output[index][channel] = input.data[output.Length() * channel + index];
+      }
+    }
+    return output;
+  }
+}; // class DecodeFn
+
+inline constexpr auto Decode = DecodeFn();
+
 }; // namespace PSD

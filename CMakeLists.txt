@@ -46,7 +46,7 @@ FetchContent_MakeAvailable(file-cpp)
 FetchContent_Declare(
     image-cpp
     GIT_REPOSITORY https://github.com/weqeqq/image-cpp
-    GIT_TAG 7a8192a06dcede20f1f427d630550c14085485d2
+    GIT_TAG 154c4f377ca71dbcfc6ae45abd2127af471b286e
 )
 set(IMAGE_DEPENDENCY_FILE_IMPORTED ON CACHE INTERNAL "")
 FetchContent_MakeAvailable(image-cpp)
