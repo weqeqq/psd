@@ -63,3 +63,5 @@ if(PSD_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+install(TARGETS psd FILE_SET HEADERS)
