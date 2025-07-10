@@ -115,6 +115,8 @@ class Header {
   }
 public:
   Header() = default;
+  Header(unsigned row_count, unsigned column_count)
+    : row_count(row_count), column_count(column_count) {}
 
   bool operator==(const Header &other) const {
     return Comparable() == other.Comparable();
@@ -123,7 +125,7 @@ public:
     return !operator==(other);
   }
   Version       version       = Version::PSD;
-  std::uint16_t channel_count = 0;
+  std::uint16_t channel_count = 3;
   std::uint32_t row_count     = 0;
   std::uint32_t column_count  = 0;
   Depth         depth         = Depth::Eight;

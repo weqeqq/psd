@@ -39,7 +39,7 @@ TEST_F(HeaderTest, VersionToStream) {
 
     EXPECT_NO_THROW(stream.Write(version));
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     Version read_version;
     stream.ReadTo(read_version);
     EXPECT_EQ(read_version, Version::PSD);
@@ -86,7 +86,7 @@ TEST_F(HeaderTest, DepthToStream) {
 
     EXPECT_NO_THROW(stream.Write(depth));
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     Depth read_depth;
     stream.ReadTo(read_depth);
     EXPECT_EQ(read_depth, Depth::Sixteen);
@@ -108,7 +108,7 @@ TEST_F(HeaderTest, ColorToStream) {
 
     EXPECT_NO_THROW(stream.Write(color));
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     Color read_color;
     stream.ReadTo(read_color);
     EXPECT_EQ(read_color, Color::Cmyk);
@@ -119,7 +119,7 @@ TEST_F(HeaderTest, HeaderDefaultConstruction) {
     Header header;
 
     EXPECT_EQ(header.version, Version::PSD);
-    EXPECT_EQ(header.channel_count, 0);
+    EXPECT_EQ(header.channel_count, 3);
     EXPECT_EQ(header.row_count, 0);
     EXPECT_EQ(header.column_count, 0);
     EXPECT_EQ(header.depth, Depth::Eight);
@@ -132,7 +132,7 @@ TEST_F(HeaderTest, HeaderEqualityOperator) {
 
     EXPECT_EQ(header1, header2);
 
-    header2.channel_count = 3;
+    header2.channel_count = 1;
     EXPECT_NE(header1, header2);
 }
 
@@ -188,7 +188,7 @@ TEST_F(HeaderTest, HeaderToStream) {
     Stream stream;
     EXPECT_NO_THROW(stream.Write(header));
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     Header read_header;
     stream.ReadTo(read_header);
 
@@ -207,7 +207,7 @@ TEST_F(HeaderTest, HeaderRoundTrip) {
     Stream stream;
     stream.Write(original);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     Header read_header;
     stream.ReadTo(read_header);
 

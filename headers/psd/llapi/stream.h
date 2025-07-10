@@ -7,6 +7,7 @@
 
 #include <initializer_list>
 #include <iterator>
+#include <map>
 #include <psd/error.h>
 #include <type_traits>
 #include <file/input.h>
@@ -181,8 +182,7 @@ template <typename T>
 static constexpr bool SupportedIterator =
   (std::is_same_v<IteratorCategory<T>, std::forward_iterator_tag>       ||
    std::is_same_v<IteratorCategory<T>, std::bidirectional_iterator_tag> ||
-   std::is_same_v<IteratorCategory<T>, std::random_access_iterator_tag>) &&
-  ByteSwapSupported<IteratorValue<T>>;
+   std::is_same_v<IteratorCategory<T>, std::random_access_iterator_tag>);
 
 } // namespace detail
 class Stream {
@@ -296,7 +296,7 @@ public:
     T>
   Read(A&&... arguments) {
     T output;
-    return std::move(ReadTo(output));
+    return std::move(ReadTo(output, std::forward<A>(arguments)...));
   }
   template <typename T>
   std::enable_if_t<detail::ByteSwapSupported<T>, T&>
@@ -348,10 +348,12 @@ public:
       std::is_same_v<Value, I8>) {
         auto current = reinterpret_cast<Value *>(buffer_.data() + offset_);
         std::copy(current, current + distance, begin);
+        offset_ += distance;
     } else {
-      for (; begin != end; ++begin) *begin = Read<Value>();
+      std::for_each(begin, end, [this](auto &value) {
+        ReadTo(value);
+      });
     }
-    offset_ += distance;
   }
   template <typename I>
   std::enable_if_t<detail::SupportedIterator<I>>
@@ -366,12 +368,12 @@ public:
       std::is_same_v<Value, I8>) {
         const auto current = Current<Value>();
         std::copy(begin, end, current);
+        offset_ += distance;
     } else {
       std::for_each(begin, end, [this](const auto &value){
         Write(value);
       });
     }
-    offset_ += distance;
   }
 
   void operator+=(unsigned value) {
@@ -392,11 +394,17 @@ public:
   void operator--(int) {
     offset_--;
   }
-  void SetOffset(unsigned value) {
+  void SetPos(unsigned value) {
     offset_ = value;
   }
-  unsigned GetOffset() const {
+  unsigned Pos() const {
     return offset_;
+  }
+  unsigned Length() const {
+    return buffer_.size();
+  }
+  void Dump(const std::filesystem::path &path) {
+    File::To(buffer_, path);
   }
 private:
   std::vector<U8> buffer_; unsigned offset_ = 0;
@@ -420,5 +428,74 @@ private:
     );
   }
 };
-
+template <typename T>
+struct FromStreamFn<std::vector<T>> {
+  void operator()(Stream &stream, std::vector<T> &output, unsigned length) {
+    output.resize(length);
+    stream.Read(
+      output.begin(),
+      output.end()
+    );
+  }
+}; // struct FromStreamFn<std::vector<T>>
+template <typename T>
+struct ToStreamFn<std::vector<T>> {
+  void operator()(Stream &stream, const std::vector<T> &input) {
+    stream.Write(
+      input.begin(),
+      input.end()
+    );
+  }
+}; // struct ToStreamFn<std::vector<T>>
+template <typename T>
+struct FromStreamFn<std::basic_string<T>> {
+  void operator()(Stream &stream, std::basic_string<T> &output, unsigned length) {
+    output.resize(length);
+    stream.Read(
+      output.begin(),
+      output.end()
+    );
+  }
+}; // struct FromStreamFn<std::basic_string<T>>
+template <typename T>
+struct ToStreamFn<std::basic_string<T>> {
+  void operator()(Stream &stream, const std::basic_string<T> &input) {
+    stream.Write(
+      input.begin(),
+      input.end()
+    );
+  }
+}; // struct ToStreamFn<std::basic_string<T>>
+template <typename F, typename S>
+struct FromStreamFn<std::pair<F, S>> {
+  void operator()(Stream &stream, std::pair<F, S> &output) {
+    stream.ReadTo(output.first);
+    stream.ReadTo(output.second);
+  }
+}; // struct FromStreamFn<std::pair<F, S>>
+template <typename F, typename S>
+struct ToStreamFn<std::pair<F, S>> {
+  void operator()(Stream &stream, const std::pair<F, S> &input) {
+    stream.Write(input.first);
+    stream.Write(input.second);
+  }
+}; // struct ToStreamFn<std::pair<F, S>>
+template <typename K, typename V>
+struct FromStreamFn<std::map<K, V>> {
+  void operator()(Stream &stream, std::map<K, V> &output, unsigned length) {
+    for (auto index = 0u;
+              index < length;
+              index++) {
+      output[stream.Read<K>()] = stream.Read<V>();
+    }
+  }
+}; // struct FromStreamFn<std::map<K, V>>
+template <typename K, typename V>
+struct ToStreamFn<std::map<K, V>> {
+  void operator()(Stream &stream, const std::map<K, V> &input) {
+    for (const auto &pair : input) {
+      stream.Write(pair);
+    }
+  }
+}; // struct ToStreamFn<std::map<K, V>>
 }; // namespace PSD::llapi

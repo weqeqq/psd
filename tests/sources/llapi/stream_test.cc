@@ -31,7 +31,7 @@ protected:
 TEST_F(StreamTest, DefaultConstructor) {
     PSD::llapi::Stream stream;
     // Should not throw and should be in valid state
-    EXPECT_NO_THROW(stream.SetOffset(0));
+    EXPECT_NO_THROW(stream.SetPos(0));
 }
 
 TEST_F(StreamTest, FileConstructor) {
@@ -68,15 +68,15 @@ TEST_F(StreamTest, ReadSignedTypes) {
     auto i8_value = stream.Read<PSD::llapi::I8>();
     EXPECT_EQ(i8_value, 0x01);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     auto i16_value = stream.Read<PSD::llapi::I16>();
     EXPECT_EQ(i16_value, 0x0102);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     auto i32_value = stream.Read<PSD::llapi::I32>();
     EXPECT_EQ(i32_value, 0x01020304);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     auto i64_value = stream.Read<PSD::llapi::I64>();
     EXPECT_EQ(i64_value, 0x0102030405060708LL);
 }
@@ -84,7 +84,7 @@ TEST_F(StreamTest, ReadSignedTypes) {
 TEST_F(StreamTest, WriteU8) {
     PSD::llapi::Stream stream;
     stream.Write<PSD::llapi::U8>(0x42);
-    stream.SetOffset(0);
+    stream.SetPos(0);
     auto value = stream.Read<PSD::llapi::U8>();
     EXPECT_EQ(value, 0x42);
 }
@@ -92,7 +92,7 @@ TEST_F(StreamTest, WriteU8) {
 TEST_F(StreamTest, WriteU16) {
     PSD::llapi::Stream stream;
     stream.Write<PSD::llapi::U16>(0x1234);
-    stream.SetOffset(0);
+    stream.SetPos(0);
     auto value = stream.Read<PSD::llapi::U16>();
     EXPECT_EQ(value, 0x1234);
 }
@@ -100,7 +100,7 @@ TEST_F(StreamTest, WriteU16) {
 TEST_F(StreamTest, WriteU32) {
     PSD::llapi::Stream stream;
     stream.Write<PSD::llapi::U32>(0x12345678);
-    stream.SetOffset(0);
+    stream.SetPos(0);
     auto value = stream.Read<PSD::llapi::U32>();
     EXPECT_EQ(value, 0x12345678);
 }
@@ -108,7 +108,7 @@ TEST_F(StreamTest, WriteU32) {
 TEST_F(StreamTest, WriteU64) {
     PSD::llapi::Stream stream;
     stream.Write<PSD::llapi::U64>(0x123456789ABCDEF0ULL);
-    stream.SetOffset(0);
+    stream.SetPos(0);
     auto value = stream.Read<PSD::llapi::U64>();
     EXPECT_EQ(value, 0x123456789ABCDEF0ULL);
 }
@@ -129,7 +129,7 @@ TEST_F(StreamTest, WriteIterator) {
     std::vector<PSD::llapi::U8> data = {0x10, 0x20, 0x30, 0x40};
     stream.Write(data.begin(), data.end());
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     std::vector<PSD::llapi::U8> buffer(4);
     stream.Read(buffer.begin(), buffer.end());
 
@@ -160,11 +160,11 @@ TEST_F(StreamTest, OffsetOperators) {
 TEST_F(StreamTest, SetOffset) {
     PSD::llapi::Stream stream(test_file_path_);
 
-    stream.SetOffset(3);
+    stream.SetPos(3);
     auto value = stream.Read<PSD::llapi::U8>();
     EXPECT_EQ(value, 0x04);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     value = stream.Read<PSD::llapi::U8>();
     EXPECT_EQ(value, 0x01);
 }
@@ -185,15 +185,15 @@ TEST_F(StreamTest, ReadFloatingPoint) {
     float test_float = 3.14159f;
     stream.Write(test_float);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     float read_float = stream.Read<float>();
     EXPECT_FLOAT_EQ(read_float, test_float);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     double test_double = 2.71828;
     stream.Write(test_double);
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     double read_double = stream.Read<double>();
     EXPECT_DOUBLE_EQ(read_double, test_double);
 }
@@ -209,7 +209,7 @@ TEST_F(StreamTest, LargeDataWrite) {
 
     stream.Write(large_data.begin(), large_data.end());
 
-    stream.SetOffset(0);
+    stream.SetPos(0);
     std::vector<PSD::llapi::U32> read_data(1000);
     stream.Read(read_data.begin(), read_data.end());
 

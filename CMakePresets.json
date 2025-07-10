@@ -10,7 +10,8 @@
       "name": "debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_CXX_FLAGS": "-Wall -Wpedantic -g"
       },
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/debug"
