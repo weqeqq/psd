@@ -16,7 +16,7 @@ extern "C" {
 typedef struct psd_document psd_document;
 
 psd_document *psd_document_new(void);
-psd_document *psd_document_copy(const psd_document *document);
+psd_document *psd_document_clone(const psd_document *document);
 
 void psd_document_delete(psd_document *document);
 
