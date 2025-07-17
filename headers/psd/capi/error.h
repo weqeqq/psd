@@ -5,7 +5,6 @@
 #include <exception>
 #include <cstdlib>
 
-namespace PSD::capi {
 extern "C" {
 #endif
 
@@ -30,5 +29,4 @@ psd_error HandleError(F function) {
 }
 } // namespace
 } // namespace detail
-} // namespace PSD::capi
 #endif
