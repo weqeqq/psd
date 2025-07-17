@@ -2,7 +2,6 @@
 #pragma once
 
 #include "psd/llapi/stream.h"
-#include "psd/llapi/structure/info/extra_info/section_divider.h"
 #include "psd/llapi/structure/info/layer_info/channel_data.h"
 #include <psd/llapi/structure/info/layer_info.h>
 #include <psd/document/layer.h>
@@ -43,7 +42,7 @@ private:
       {
         channel_data[index] = input.Image()[index][channel];
       }
-      output.data[(channel == 3) ? -1 : channel] = {llapi::Compression::None, std::move(channel_data)};
+      output.data[(channel == 3) ? -1 : channel] = llapi::Channel(std::move(channel_data));
     }
   }
 }; // class LayerConverter<Layer>
@@ -67,13 +66,20 @@ private:
       coordinates.right  - coordinates.left
     );
     for (auto channel = 0u;
-              channel < output.ChannelCount();
+              channel < input.layer_data.channel_count;
               channel++) {
-      const auto &current_channel = input.channel_data.data.at((channel == 3) ? -1 : channel).second;
+      const auto &current_channel = input.channel_data.data.at((channel == 3) ? -1 : channel).data;
       for (auto index = 0u;
                 index < output.Length();
                 index++) {
         output[index][channel] = current_channel[index];
+      }
+    }
+    if (input.layer_data.channel_count != 4) {
+      for (auto index = 0u;
+                index < output.Length();
+                index++) {
+        output[index][3] = 0xff;
       }
     }
     return output;

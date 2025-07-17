@@ -16,7 +16,13 @@ class Layer : public EntryFor<Layer> {
     return std::tie(name_, xoffset_, yoffset_, image_);
   }
 public:
-  Layer(const std::string &name) : name_(name) {}
+  Layer() = default;
+
+  Layer(std::string name)
+    : name_(std::move(name)) {}
+
+  Layer(std::string name, Image::Buffer<> image)
+    : name_(std::move(name)), image_(std::move(image)) {}
 
   bool IsLayer() const override final { return true; }
   bool IsGroup() const override final { return false; }

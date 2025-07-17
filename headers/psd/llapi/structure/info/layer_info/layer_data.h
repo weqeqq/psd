@@ -5,10 +5,9 @@
 #include <map>
 #include <psd/llapi/stream.h>
 
-#include <psd/llapi/structure/info/extra_info.h>
+#include "layer_data/layer_data_extra.h"
 
 #include <string>
-#include <type_traits>
 #include <vector>
 
 namespace PSD::llapi {
@@ -168,7 +167,7 @@ class LayerData {
       stream.ReadTo(output.name, stream.Read<U8>());
       stream += output.NamePadding();
     }
-    void ReadExtraInfo(Stream &stream, LayerData &output, U32 length) {
+    void ReadExtra(Stream &stream, LayerData &output, U32 length) {
       stream.ReadTo(
         output.extra_info,
         length -
@@ -190,7 +189,7 @@ class LayerData {
       ReadAdjustmentInfo (stream, output);
       ReadBlendingInfo   (stream, output);
       ReadName           (stream, output);
-      ReadExtraInfo      (stream, output, length);
+      ReadExtra          (stream, output, length);
     }
   }; // struct FromStreamFn
   struct ToStreamFn {
@@ -237,7 +236,7 @@ class LayerData {
         stream.Write(U8(0));
       }
     }
-    void WriteExtraInfo(Stream &stream, const LayerData &input) {
+    void WriteExtra(Stream &stream, const LayerData &input) {
       stream.Write(input.extra_info);
     }
     void operator()(Stream &stream, const LayerData &input) {
@@ -253,7 +252,7 @@ class LayerData {
       WriteAdjustmentInfo    (stream, input);
       WriteBlendingInfo      (stream, input);
       WriteName              (stream, input);
-      WriteExtraInfo         (stream, input);
+      WriteExtra             (stream, input);
     }
   }; // struct ToStreamFn
   friend Stream;
@@ -270,7 +269,7 @@ public:
   AdjustmentInfo     adjustment_info;
   BlendingInfo       blending_info;
   std::string        name;
-  ExtraInfo          extra_info;
+  LayerDataExtra     extra_info;
 
   unsigned Length() const {
     return ExtraLength() + 34 + (channel_count * 6);

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.23)
 
 project(psd C CXX)
 set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 1)
+set(PROJECT_VERSION_MINOR 2)
 set(PROJECT_VERSION_PATCH 0)
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
@@ -46,14 +46,34 @@ FetchContent_MakeAvailable(file-cpp)
 FetchContent_Declare(
     image-cpp
     GIT_REPOSITORY https://github.com/weqeqq/image-cpp
-    GIT_TAG 154c4f377ca71dbcfc6ae45abd2127af471b286e
+    GIT_TAG bc0c19a9c3fa7b223b6cdbfbda3fb35ac45c0a2b
 )
 set(IMAGE_DEPENDENCY_FILE_IMPORTED ON CACHE INTERNAL "")
 FetchContent_MakeAvailable(image-cpp)
+FetchContent_Declare(
+  xsimd
+  GIT_REPOSITORY https://github.com/xtensor-stack/xsimd.git
+  GIT_TAG        13.2.0
+)
+FetchContent_MakeAvailable(xsimd)
+FetchContent_Declare(
+    libdeflate
+    GIT_REPOSITORY https://github.com/ebiggers/libdeflate.git
+    GIT_TAG 96836d7d9d10e3e0d53e6edb54eb908514e336c4
+)
+set(LIBDEFLATE_BUILD_STATIC_LIB ON  CACHE INTERNAL "")
+set(LIBDEFLATE_BUILD_SHARED_LIB OFF CACHE INTERNAL "")
+set(LIBDEFLATE_GZIP_SUPPORT     OFF CACHE INTERNAL "")
+set(LIBDEFLATE_BUILD_GZIP       OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(libdeflate)
+
 target_link_libraries(psd
     PUBLIC
         file::file
         image::image
+        image::io
+        libdeflate::libdeflate_static
+        xsimd
 )
 if(CMAKE_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
     target_compile_definitions(psd PUBLIC PSD_LITTLE_ENDIAN)

@@ -3,7 +3,6 @@
 
 #include "psd/document/detail/layer_converter.h"
 #include "psd/document/layer.h"
-#include "psd/llapi/structure/info/extra_info/section_divider.h"
 #include "psd/llapi/structure/info/layer_info.h"
 #include "psd/llapi/structure/info/layer_info/channel_data.h"
 #include <cassert>
@@ -52,7 +51,7 @@ private:
     for (auto channel = 0u;
               channel < 4;
               channel++) {
-      output.data[(channel == 3) ? -1 : channel].second = {};
+      output.data[(channel == 3) ? -1 : channel].data = {};
     }
   }
   llapi::LayerRecord CreateStart() {

@@ -12,7 +12,7 @@ namespace PSD::detail {
 //
 class GroupProcessor {
 public:
-  ::Image::Buffer<> operator()(const Group &input) {
+  ::Image::Buffer<> operator()(const Group &input) const {
     ::Image::Buffer<> output(
       input.Bottom() - input.Top(),
       input.Right()  - input.Left()
@@ -31,7 +31,7 @@ public:
     return output;
   }
 private:
-  void ProcessLayer(const Group &group, ::Image::Buffer<> &output, const Layer &input) {
+  void ProcessLayer(const Group &group, ::Image::Buffer<> &output, const Layer &input) const {
     Image::Blend(
       output,
       LayerProcessor()(input),
@@ -40,7 +40,7 @@ private:
       Image::Blending::Normal
     );
   }
-  void ProcessGroup(const Group &group, ::Image::Buffer<> &output, const Group &input) {
+  void ProcessGroup(const Group &group, ::Image::Buffer<> &output, const Group &input) const {
     Image::Blend(
       output,
       GroupProcessor()(input),
@@ -50,4 +50,7 @@ private:
     );
   }
 };
+
+inline constexpr auto ProcessGroup = GroupProcessor();
+
 }; // PSD::detail

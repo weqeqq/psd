@@ -1,18 +1,17 @@
 
 #pragma once
 
-#include "psd/llapi/structure/info/extra_info/extra.h"
-#include "psd/llapi/structure/info/extra_info/section_divider.h"
-#include <memory>
-#include <psd/llapi/structure/info/extra_info/default_extra.h>
 #include <unordered_map>
-#include <utility>
+
+#include "layer_data_extra/default_extra.h"
+#include "layer_data_extra/section_divider.h"
 
 namespace PSD::llapi {
 //
-class ExtraInfo {
+
+class LayerDataExtra {
   struct FromStreamFn {
-    void operator()(Stream &stream, ExtraInfo &output, unsigned length) {
+    void operator()(Stream &stream, LayerDataExtra &output, unsigned length) {
       auto end_of_read = length + stream.Pos();
       while (stream.Pos() < end_of_read) {
         auto header = stream.Read<ExtraHeader>();
@@ -32,7 +31,7 @@ class ExtraInfo {
     }
   }; // struct FromStreamFn
   struct ToStreamFn {
-    void operator()(Stream &stream, const ExtraInfo &input) {
+    void operator()(Stream &stream, const LayerDataExtra &input) {
       for (const auto &[id, extra] : input.data_) {
         stream.Write(extra);
       }
@@ -40,7 +39,7 @@ class ExtraInfo {
   }; // struct ToStreamFn
   friend Stream;
 public:
-  ExtraInfo() = default;
+  LayerDataExtra() = default;
   unsigned Length() const {
     return ContentLength();
   }
@@ -87,5 +86,5 @@ private:
     }
     return length;
   }
-}; // class ExtraInfo
-}; // namespace PSD::llapi
+};
+} // namespace PSD::llapi

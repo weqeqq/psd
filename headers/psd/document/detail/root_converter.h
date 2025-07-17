@@ -67,4 +67,8 @@ public:
     return output;
   }
 }; // class RootConverter<llapi::LayerInfo>
+
+template <typename T>
+auto ConvertRoot(const T &root) { return RootConverter<T>()(root); }
+
 }; // PSD::detail

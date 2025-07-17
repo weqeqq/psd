@@ -52,6 +52,8 @@ using I8  = std::int8_t;
 using I16 = std::int16_t;
 using I32 = std::int32_t;
 using I64 = std::int64_t;
+using F32 = float;
+using F64 = double;
 
 namespace detail {
 //
@@ -336,7 +338,9 @@ public:
   }
 
   template <typename I>
-  std::enable_if_t<detail::SupportedIterator<I>>
+  std::enable_if_t<
+    !ToStreamFnImplemented        <typename I::value_type, I, I> &&
+    !ToStreamFnImplementedInClass <typename I::value_type, I, I>>
   Read(I begin, I end) {
     auto distance = std::distance(begin, end);
     if (Overflow(distance)) {
@@ -403,8 +407,11 @@ public:
   unsigned Length() const {
     return buffer_.size();
   }
-  void Dump(const std::filesystem::path &path) {
+  void Dump(const std::filesystem::path &path) const {
     File::To(buffer_, path);
+  }
+  void Dump(std::vector<U8> &output) const {
+    output = buffer_;
   }
 private:
   std::vector<U8> buffer_; unsigned offset_ = 0;

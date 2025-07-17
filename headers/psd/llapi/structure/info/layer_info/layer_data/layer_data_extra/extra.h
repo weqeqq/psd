@@ -1,8 +1,6 @@
 
 #pragma once
 
-#include <iomanip>
-#include <iostream>
 #include <memory>
 #include <psd/llapi/stream.h>
 
@@ -10,6 +8,8 @@ namespace PSD::llapi {
 //
 enum class ExtraID : U32 {
   SectionDivider = 0x6C736374,
+  Layer16        = 0x4c723136,
+  Layer32        = 0x4c723332,
 }; // enum class ExtraID
 template <>
 struct FromStreamFn<ExtraID> {
@@ -51,9 +51,13 @@ protected:
 template <>
 struct FromStreamFn<std::shared_ptr<Extra>> {
   void operator()(Stream &stream, std::shared_ptr<Extra> &output, std::shared_ptr<Extra> extra) {
-    if (extra->ContentLength() % 2) {
-      stream++;
-    }
+    auto length = extra->ContentLength();
+    while (length++ % 4) stream++;
+    output = extra;
+  }
+  void operator()(Stream &stream, std::shared_ptr<Extra> &output, std::shared_ptr<Extra> extra, unsigned start) {
+    auto length = stream.Pos() - start;
+    while (length++ % 4) stream++;
     output = extra;
   }
 }; // struct FromStreamFn<std::shared_ptr<Extra>>
@@ -130,7 +134,8 @@ protected:
   void ToStream(Stream &stream) const override final {
     stream.Write(ExtraHeader{ExtraToID<T>, ContentLength()});
     stream.Write(Self());
-    if (ContentLength() % 2) {
+    auto length = ContentLength();
+    while (length++ % 4) {
       stream.Write(U8(0));
     }
   }
