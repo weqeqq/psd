@@ -5,6 +5,7 @@
 #include <exception>
 #include <cstdlib>
 
+namespace PSD::capi {
 extern "C" {
 #endif
 
@@ -15,7 +16,7 @@ typedef struct {
 
 #ifdef __cplusplus
 } // extern "C"
-namespace PSD::capi::detail {
+namespace detail {
 namespace {
 
 template <typename F>
@@ -29,4 +30,5 @@ psd_error HandleError(F function) {
 }
 } // namespace
 } // namespace detail
+} // namespace PSD::capi
 #endif

@@ -294,7 +294,7 @@ std::vector<U8> CompressDefault(
   std::vector<U8> output(row_count * sizeof(U16));
   auto iterator = input.begin();
   output.reserve(output.size() + row_count * column_count);
-  for (auto index = 0;
+  for (auto index = 0u;
             index < row_count;
             index++) {
       union {
