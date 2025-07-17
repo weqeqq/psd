@@ -7,7 +7,6 @@
 #include <psd/llapi/structure/resource_info.h>
 #include <psd/llapi/structure/info.h>
 #include <psd/llapi/structure/image.h>
-#include <tmmintrin.h>
 
 namespace PSD::llapi {
 //
