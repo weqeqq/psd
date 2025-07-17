@@ -15,7 +15,7 @@ typedef struct {
 
 #ifdef __cplusplus
 } // extern "C"
-namespace detail {
+namespace PSD::capi::detail {
 namespace {
 
 template <typename F>
