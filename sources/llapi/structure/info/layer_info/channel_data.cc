@@ -1,6 +1,7 @@
 
 #include "psd/llapi/stream.h"
 #include "psd/llapi/structure/header.h"
+#include <cstddef>
 #include <iterator>
 #include <psd/llapi/structure/info/layer_info/channel_data.h>
 #include <libdeflate.h>
@@ -70,7 +71,7 @@ std::vector<U8> DecompressDeflate(
   if (!decompressor) {
     throw Error("PSD::Error: DecompressorError");
   }
-  auto decompressed = 0ul;
+  std::size_t decompressed = 0ul;
   if (libdeflate_zlib_decompress(
     decompressor,
     input.data(),
