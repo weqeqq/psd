@@ -44,8 +44,7 @@ struct FromStreamFn<Depth> {
         depth != Depth::ThirtyTwo)
       throw Error(
           "PSD::Error: DepthError\n"
-          "Expected: 1, 8, 16, or 32\n"
-          "Received: " + std::to_string(static_cast<std::underlying_type_t<Depth>>(depth))
+          "Expected: 1, 8, 16, or 32"
       );
   }
 };
