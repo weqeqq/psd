@@ -7,6 +7,10 @@
 #include <libdeflate.h>
 #include <xsimd/xsimd.hpp>
 
+#if PSD_COMPILER_MSVC
+#include <intrin.h>
+#endif
+
 namespace PSD::llapi {
 //
 template <typename I, typename O>
@@ -198,6 +202,18 @@ DecompressDeflateDelta(
   }
   return decompressed;
 }
+
+inline int ZeroCount(std::uint32_t value) {
+  #if PSD_COMPILER_MSVC
+    unsigned long index;
+    if (_BitScanForward(&index, value)) {
+      return static_cast<int>(index);
+    }
+    return 32;
+  #elif PSD_COMPILER_GCC || PSD_COMPILER_CLANG
+    return __builtin_ctz(value);
+  #endif
+}
 template <typename I>
 void InsertCompressed(
   std::vector<U8> &output,
@@ -219,7 +235,7 @@ void InsertCompressed(
           input += xsimd::batch<U8>::size;
           continue;
         }
-        int matching = __builtin_ctz(~compare.mask());
+        int matching = ZeroCount(~compare.mask());
         count += matching;
         input += matching;
         break;
@@ -250,7 +266,7 @@ void InsertCompressed(
             input += (xsimd::batch<U8>::size * 2);
             continue;
           }
-          auto non_matching = __builtin_ctz(compare.mask());
+          auto non_matching = ZeroCount(compare.mask());
           count += non_matching;
           input += non_matching;
           break;
