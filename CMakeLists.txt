@@ -46,9 +46,12 @@ FetchContent_MakeAvailable(file-cpp)
 FetchContent_Declare(
     image-cpp
     GIT_REPOSITORY https://github.com/weqeqq/image-cpp
-    GIT_TAG bc0c19a9c3fa7b223b6cdbfbda3fb35ac45c0a2b
+    GIT_TAG c739cff0e41e36497599874ce6f8cfb47357120d
 )
 set(IMAGE_DEPENDENCY_FILE_IMPORTED ON CACHE INTERNAL "")
+set(IMAGE_FORMAT_JPEG OFF CACHE INTERNAL "")
+set(IMAGE_FORMAT_WEBP OFF CACHE INTERNAL "")
+set(IMAGE_FORMAT_PNG  OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(image-cpp)
 FetchContent_Declare(
   xsimd
@@ -71,7 +74,6 @@ target_link_libraries(psd
     PUBLIC
         file::file
         image::image
-        image::io
         libdeflate::libdeflate_static
         xsimd
 )
